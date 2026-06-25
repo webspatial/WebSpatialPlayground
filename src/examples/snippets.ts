@@ -284,29 +284,35 @@ const reality3d: Snippet = {
   id: 'reality',
   title: '<Reality> — programmable 3D',
   blurb:
-    'The <Reality> container renders arbitrary 3D with the SDK engine API: declare <Material>s, then compose primitive entities (Box, Sphere, Cone, Cylinder, Plane) inside <World>. Change the shape and colour — the scene graph rebuilds live.',
+    'The <Reality> container renders arbitrary 3D with the SDK engine API: declare an <UnlitMaterial>, then compose primitive entities (BoxEntity, SphereEntity, ConeEntity, CylinderEntity) inside a <SceneGraph>. Change the shape and colour — the scene graph rebuilds live.',
   docs: [
     { label: '<Reality>', url: DOCS + '/react-components/Reality' },
-    { label: '--xr-depth', url: DOCS + '/css-api/depth' },
+    { label: 'Entities & Materials', url: DOCS + '/react-components' },
   ],
   code: `import { useState } from 'react'
-import { Reality, World, Material, Box, Sphere, Cylinder, Cone } from '@webspatial/react-sdk'
+import {
+  Reality, SceneGraph, UnlitMaterial,
+  BoxEntity, SphereEntity, CylinderEntity, ConeEntity,
+} from '@webspatial/react-sdk'
 
 export default function RealityDemo() {
   const [shape, setShape] = useState('box')
   const [color, setColor] = useState('#a78bfa')
-  const s = 0.26
+
+  // Entities live in meters; +z pushes them toward the viewer, in front of
+  // the backplate so they sit inside the volume.
+  const pos = { x: 0, y: 0, z: 0.2 }
 
   return (
     <div style={{ display: 'grid', placeItems: 'center', height: '100%', gap: 16 }}>
-      <Reality style={{ width: 360, height: 300, '--xr-depth': '220px' }}>
-        <Material type="unlit" id="main" color={color} />
-        <World>
-          {shape === 'box' && <Box materials={['main']} width={s} height={s} depth={s} />}
-          {shape === 'sphere' && <Sphere materials={['main']} radius={s / 2} />}
-          {shape === 'cylinder' && <Cylinder materials={['main']} radius={s / 2} height={s * 1.4} />}
-          {shape === 'cone' && <Cone materials={['main']} radius={s / 2} height={s * 1.4} />}
-        </World>
+      <Reality style={{ width: 360, height: 320 }}>
+        <UnlitMaterial id="main" color={color} />
+        <SceneGraph>
+          {shape === 'box' && <BoxEntity materials={['main']} width={0.12} height={0.12} depth={0.12} cornerRadius={0.01} position={pos} />}
+          {shape === 'sphere' && <SphereEntity materials={['main']} radius={0.08} position={pos} />}
+          {shape === 'cylinder' && <CylinderEntity materials={['main']} radius={0.07} height={0.16} position={pos} />}
+          {shape === 'cone' && <ConeEntity materials={['main']} radius={0.08} height={0.16} position={pos} />}
+        </SceneGraph>
       </Reality>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -335,44 +341,44 @@ const animatedReality: Snippet = {
   id: 'reality-animated',
   title: '<Reality> — animated equalizer',
   blurb:
-    'A live scene graph driven by an animation loop. Each bar is a Box entity whose scale and colour update every frame — the same React state that drives a 2D chart drives real 3D geometry. Inspired by the SDK test-server reality samples.',
+    'A live scene graph driven by an animation loop. Each bar is a BoxEntity whose height and colour update every frame — the same React state that would drive a 2D chart drives real 3D geometry.',
   docs: [
     { label: '<Reality>', url: DOCS + '/react-components/Reality' },
     { label: 'Entities & Materials', url: DOCS + '/react-components' },
   ],
   code: `import { useEffect, useState } from 'react'
-import { Reality, World, Material, Box } from '@webspatial/react-sdk'
+import { Reality, SceneGraph, UnlitMaterial, BoxEntity } from '@webspatial/react-sdk'
 
-const BARS = 12
+const BARS = 10
 
 export default function Equalizer() {
   const [t, setT] = useState(0)
   useEffect(() => {
     let raf = 0
-    const tick = () => { setT((v) => v + 0.05); raf = requestAnimationFrame(tick) }
+    const tick = () => { setT((v) => v + 0.06); raf = requestAnimationFrame(tick) }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
 
   const bars = Array.from({ length: BARS }, (_, i) => {
-    const h = 0.06 + 0.16 * (0.5 + 0.5 * Math.sin(t + i * 0.6))
-    return { i, h, x: (i - (BARS - 1) / 2) * 0.05 }
+    const h = 0.05 + 0.14 * (0.5 + 0.5 * Math.sin(t + i * 0.6))
+    return { i, h, x: (i - (BARS - 1) / 2) * 0.06 }
   })
 
   return (
     <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
-      <Reality style={{ width: 380, height: 300, '--xr-depth': '240px' }}>
+      <Reality style={{ width: 380, height: 320 }}>
         {bars.map((b) => (
-          <Material key={'m' + b.i} type="unlit" id={'m' + b.i}
-            color={'hsl(' + (260 + b.i * 8) + ', 80%, 65%)'} />
+          <UnlitMaterial key={'m' + b.i} id={'m' + b.i}
+            color={'hsl(' + (260 + b.i * 10) + ', 80%, 65%)'} />
         ))}
-        <World>
+        <SceneGraph>
           {bars.map((b) => (
-            <Box key={b.i} materials={['m' + b.i]}
-              width={0.03} height={b.h} depth={0.03}
-              position={{ x: b.x, y: 0, z: 0 }} />
+            <BoxEntity key={b.i} materials={['m' + b.i]}
+              width={0.04} height={b.h} depth={0.04}
+              position={{ x: b.x, y: 0, z: 0.2 }} />
           ))}
-        </World>
+        </SceneGraph>
       </Reality>
     </div>
   )
@@ -396,6 +402,5 @@ export const docLinks = {
   llms: 'https://webspatial.dev/llms-full.txt',
   docs: 'https://webspatial.dev/docs',
   sdk: 'https://github.com/webspatial/webspatial-sdk',
-  testServer: 'https://webspatial-sdk-test-server.vercel.app/#/',
   reactSdk: DOCS,
 }

@@ -145,9 +145,9 @@ function App() {
                   <BookOpen size={11} />{d.label}<ExternalLink size={9} className="opacity-50" />
                 </a>
               ))}
-              <a href={docLinks.testServer} target="_blank" rel="noopener noreferrer"
+              <a href={docLinks.llms} target="_blank" rel="noopener noreferrer"
                 className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/50 transition-colors hover:bg-white/10 hover:text-white/75">
-                SDK test-server examples<ArrowUpRight size={11} />
+                Full docs (llms.txt)<ArrowUpRight size={11} />
               </a>
             </div>
           </div>
