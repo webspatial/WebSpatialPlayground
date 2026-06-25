@@ -410,13 +410,179 @@ export const rotateCardLesson: Lesson = {
   },
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Chapter: CSS API: background-material · Lesson 3                        */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Story 1 made the card spatial; Story 2 rotated it in space. Story 3 changes
+ * the *surface behind* the card so it feels native to spatial computing. This is
+ * the old "Background materials" demo, reframed as a guided lesson: the user
+ * starts from a spatial card painted with a flat CSS color, adds a translucent
+ * material backplate, makes the painted layer transparent enough to reveal it,
+ * shapes it with radius + border, then compares `transparent` vs `translucent`.
+ *
+ * The starter deliberately omits `--xr-background-material` (unlike Stories 1–2)
+ * because adding it is the whole point of this chapter.
+ */
+
+const materialStarterCode = `export default function MaterialCard() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* a spatial card painted with a flat, opaque CSS background */}
+      <div
+        enable-xr
+        style={{
+          '--xr-back': '60px',
+          width: 260,
+          padding: 26,
+          borderRadius: 12,
+          color: '#ede9fe',
+          background: '#241a3d',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Spatial card</h2>
+        <p style={{ fontSize: 13, opacity: 0.7, margin: '10px 0 0' }}>
+          Painted with a flat CSS color. Give it a material next.
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+const materialFinalCode = `export default function MaterialCard() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* a spatial card resting on a translucent material backplate */}
+      <div
+        enable-xr
+        style={{
+          '--xr-back': '60px',
+          // Use a real-time material backplate instead of a flat painted color.
+          '--xr-background-material': 'translucent',
+          width: 260,
+          padding: 26,
+          borderRadius: 22,
+          color: '#ede9fe',
+          // Low alpha so the material shows through the painted layer.
+          background: 'rgba(30, 20, 60, 0.18)',
+          border: '1px solid rgba(139, 92, 246, 0.45)',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Spatial card</h2>
+        <p style={{ fontSize: 13, opacity: 0.7, margin: '10px 0 0' }}>
+          Resting on a translucent material instead of a flat color.
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+export const materialCardLesson: Lesson = {
+  id: 'material-card',
+  chapter: 'CSS API: background-material',
+  title: 'Give a spatial card a native-feeling material',
+  intro:
+    'Now that the card floats in space, give it a material surface instead of a flat painted background.',
+  learn: [
+    'How --xr-background-material changes a spatialized element’s surface',
+    'How translucent creates a material backplate',
+    'Why transparent CSS backgrounds matter',
+    'How border radius and borders shape the material',
+    'How to keep floating UI readable',
+  ],
+  fileName: 'MaterialCard.tsx',
+  starterCode: materialStarterCode,
+  finalCode: materialFinalCode,
+  steps: [
+    {
+      id: 'baseline',
+      title: 'Start from a spatial card',
+      explanation: 'This card is already spatial. Now you’ll change the surface behind it.',
+      task: 'Find the card’s background styles in the editor.',
+      anchors: ['painted with a flat', 'background:'],
+      validation: { type: 'manual' },
+      completionMessage: 'This is the baseline: a spatial card with a regular CSS background.',
+    },
+    {
+      id: 'add-material',
+      title: 'Add a translucent material',
+      explanation:
+        'translucent adds a real-time material backplate when WebSpatial is available.',
+      task: "Add '--xr-background-material': 'translucent' to the card style.",
+      anchors: ['--xr-back', '--xr-background-material'],
+      validation: { type: 'contains', value: '--xr-background-material' },
+      hint: "Place '--xr-background-material' next to '--xr-back'.",
+      experiment: 'Try turning the property off and on to compare the difference.',
+      completionMessage: 'The card now has a material backplate.',
+      notYet:
+        "Not quite yet — add '--xr-background-material': 'translucent' to the card’s style object, then try Next again.",
+    },
+    {
+      id: 'transparent-bg',
+      title: 'Make the CSS background transparent enough',
+      explanation:
+        'An opaque CSS background can cover the material. Make the painted layer transparent so the material remains visible.',
+      task: "Change the card’s background to a low-alpha color, e.g. 'rgba(30, 20, 60, 0.18)'.",
+      anchors: ['background:'],
+      validation: { type: 'manual' },
+      hint: 'Look for the alpha value in rgba(...). Lower alpha means more of the material can show through.',
+      experiment: 'Try alpha values like 0.1, 0.3, and 0.6.',
+      completionMessage: 'Now the material can actually be seen.',
+    },
+    {
+      id: 'shape-material',
+      title: 'Shape the material with radius and border',
+      explanation:
+        'Radius and borders help the material read as a real surface instead of a flat rectangle.',
+      task: "Raise borderRadius and add a subtle border, e.g. border: '1px solid rgba(139, 92, 246, 0.45)'.",
+      anchors: ['borderRadius', 'border:'],
+      validation: { type: 'contains', value: 'border:' },
+      hint: 'Use a soft border, not a heavy outline.',
+      experiment: 'Try a smaller radius, then a larger one, and compare how the panel feels.',
+      completionMessage: 'The material now has a clear shape.',
+      notYet:
+        "Not quite yet — add a border to the card’s style object (and raise borderRadius), then try Next again.",
+    },
+    {
+      id: 'compare',
+      title: 'Compare transparent and translucent',
+      explanation:
+        'transparent removes the material surface. translucent gives the element a material backplate.',
+      task: "Switch '--xr-background-material' between 'transparent' and 'translucent' to feel the difference.",
+      anchors: ['--xr-background-material'],
+      validation: { type: 'manual' },
+      hint: 'Use transparent when you want the element to feel frameless. Use translucent when it needs a readable surface.',
+      completionMessage:
+        'You compared a frameless spatial element with one that has a material surface.',
+    },
+  ],
+  wrapUp: {
+    title: 'What you built',
+    copy: 'You started with a spatial card, added a material backplate, made the CSS background transparent enough to reveal it, and shaped the surface with radius and border.',
+    concepts: [
+      '--xr-background-material controls the spatial surface.',
+      'translucent adds a material backplate.',
+      'transparent removes the surface effect.',
+      'Opaque CSS backgrounds can hide the material.',
+      'Border radius and borders help floating UI feel intentional.',
+      'Materials are useful when spatial UI needs readability and separation.',
+    ],
+  },
+  next: {
+    title: 'Natural Interactions',
+    note: 'coming next',
+  },
+}
+
 /** Lessons in order — Learn Mode walks them as a chapter-based progression. */
-export const lessons: Lesson[] = [liftCardLesson, rotateCardLesson]
+export const lessons: Lesson[] = [liftCardLesson, rotateCardLesson, materialCardLesson]
 
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
 export const upcomingLessons: LockedLesson[] = [
-  { title: 'CSS API: background-material', note: 'coming next' },
-  { title: 'Natural Interactions', note: 'locked' },
+  { title: 'Natural Interactions', note: 'coming next' },
   { title: '3D Content Containers: <Model>', note: 'locked' },
   { title: '3D Content Containers: <Reality>', note: 'locked' },
 ]
