@@ -16,6 +16,43 @@ export type Validation =
   | { type: 'containsAll'; values: string[] }
   | { type: 'sliderChanged' }
 
+/**
+ * A "do it for me" instruction: the exact edit a step is asking for, expressed
+ * as a single insertion so Learn Mode can *type it in for you* — character by
+ * character — instead of only describing it in a hint. Two shapes cover every
+ * step:
+ *  - `insertLineAfter` adds a whole new line (its own indentation included)
+ *    right after the first line that matches `anchor`.
+ *  - `insertBefore` splices `text` in-line, right before the first occurrence of
+ *    `anchor` — used to grow an existing string (e.g. a transform list).
+ */
+export type AutoType =
+  | { mode: 'insertLineAfter'; anchor: string; text: string }
+  | { mode: 'insertBefore'; anchor: string; text: string }
+
+/**
+ * Resolve an {@link AutoType} against the current code into a concrete
+ * `{ at, text }` insertion — the character offset to type at and the exact text
+ * to type. Returns `null` when the anchor isn't present (the edit can't be
+ * placed yet), so callers can fall back gracefully.
+ */
+export function resolveAutoType(code: string, a: AutoType): { at: number; text: string } | null {
+  if (a.mode === 'insertBefore') {
+    const idx = code.indexOf(a.anchor)
+    return idx === -1 ? null : { at: idx, text: a.text }
+  }
+  // insertLineAfter — prefer an exact (trimmed) line match, else the first line
+  // that merely contains the anchor, so anchors stay forgiving.
+  const lines = code.split('\n')
+  let lineIdx = lines.findIndex((l) => l.trim() === a.anchor)
+  if (lineIdx === -1) lineIdx = lines.findIndex((l) => l.includes(a.anchor))
+  if (lineIdx === -1) return null
+  let at = 0
+  for (let i = 0; i < lineIdx; i++) at += lines[i].length + 1 // + newline
+  at += lines[lineIdx].length // end of the anchor line, before its newline
+  return { at, text: '\n' + a.text }
+}
+
 export interface TutorialStep {
   id: string
   /** One short lesson-step title, e.g. "Mark the element as spatial". */
@@ -37,6 +74,11 @@ export interface TutorialStep {
    * only outside a spatial runtime, so the lesson never blocks on a headset.
    */
   fallbackNote?: string
+  /**
+   * Optional "do it for me" edit. When present, the step offers to type the
+   * change into the editor for the user instead of only hinting at it.
+   */
+  autoType?: AutoType
   /** Optional, low-key "try this" prompt. */
   experiment?: string
   /** Shown briefly once the step's edit is detected. */
@@ -191,6 +233,7 @@ export const liftCardLesson: Lesson = {
       task: 'Add enable-xr to the card element.',
       anchors: ['the card', 'enable-xr'],
       validation: { type: 'contains', value: 'enable-xr' },
+      autoType: { mode: 'insertLineAfter', anchor: '<div', text: '        enable-xr' },
       hint: 'Add enable-xr to the same <div> that styles the card.',
       completionMessage: 'Good — this card can now become spatial.',
       notYet: 'Not quite yet — add enable-xr to the card <div>, then try Next again.',
@@ -202,6 +245,7 @@ export const liftCardLesson: Lesson = {
       task: "Add '--xr-back': back + 'px' to the card's style object. CSS custom properties are quoted string keys in JS.",
       anchors: ['width: 280', '--xr-back'],
       validation: { type: 'contains', value: "'--xr-back'" },
+      autoType: { mode: 'insertLineAfter', anchor: 'style={{', text: "          '--xr-back': back + 'px'," },
       hint: "Write the key as a quoted string with a comma: '--xr-back': back + 'px',",
       experiment: 'Try 40px, then 120px, and watch how the preview changes.',
       completionMessage: 'Now the card has depth.',
@@ -215,6 +259,11 @@ export const liftCardLesson: Lesson = {
       task: "Add '--xr-background-material': 'translucent' next to --xr-back. The key stays quoted, just like --xr-back.",
       anchors: ['--xr-back', '--xr-background-material'],
       validation: { type: 'contains', value: "'--xr-background-material'" },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: "'--xr-back'",
+        text: "          '--xr-background-material': 'translucent',",
+      },
       hint: "Quoted key, string value: '--xr-background-material': 'translucent',",
       completionMessage: 'The card now has a spatial backplate.',
       notYet:
@@ -352,6 +401,11 @@ export const rotateCardLesson: Lesson = {
       task: "Add rotateY(-14deg) to the card’s transform.",
       anchors: ['--xr-background-material', 'transform:'],
       validation: { type: 'contains', value: 'rotateY' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: "'--xr-background-material'",
+        text: "          transform: 'rotateY(-14deg)',",
+      },
       hint: 'Add the transform property inside the same style object as --xr-back.',
       experiment: 'Try rotateY(14deg), then rotateY(-24deg).',
       completionMessage: 'The card now turns in true 3D.',
@@ -365,6 +419,7 @@ export const rotateCardLesson: Lesson = {
       task: 'Add rotateX(8deg) before or after the Y rotation.',
       anchors: ['transform:'],
       validation: { type: 'contains', value: 'rotateX' },
+      autoType: { mode: 'insertBefore', anchor: 'rotateY(', text: 'rotateX(8deg) ' },
       hint: 'Use both transform functions in one string.',
       experiment: 'Try a small value first. Large rotations can make UI harder to read.',
       completionMessage: 'Now the card has a more natural spatial angle.',
@@ -377,6 +432,11 @@ export const rotateCardLesson: Lesson = {
       task: "Set transformOrigin to 'center center'.",
       anchors: ['transform:', 'transformOrigin'],
       validation: { type: 'contains', value: 'transformOrigin' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'transform:',
+        text: "          transformOrigin: 'center center',",
+      },
       hint: 'Place transformOrigin next to the transform property.',
       experiment: 'Try top left, then return to center center.',
       completionMessage: 'The card now rotates around a clear pivot.',
@@ -391,6 +451,7 @@ export const rotateCardLesson: Lesson = {
       task: 'Add translateZ(40px) to the transform and compare it with --xr-back.',
       anchors: ['--xr-back', 'transform:'],
       validation: { type: 'contains', value: 'translateZ' },
+      autoType: { mode: 'insertBefore', anchor: 'rotateX(', text: 'translateZ(40px) ' },
       hint: 'Keep --xr-back in the style object. Add translateZ() inside the transform string.',
       experiment: 'Try translateZ(-20px) and notice how it differs from changing --xr-back.',
       completionMessage:
@@ -722,6 +783,11 @@ export const gestureCardLesson: Lesson = {
       task: "Add a regular onClick handler that updates the status label, e.g. onClick={() => setStatus('Clicked')}.",
       anchors: ['enable-xr', 'onClick'],
       validation: { type: 'contains', value: 'onClick' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'enable-xr',
+        text: "        onClick={() => setStatus('Clicked')}",
+      },
       hint: 'Start with onClick before adding spatial gesture handlers.',
       experiment: 'Change the status text and click again.',
       completionMessage: 'Good — the card still works like normal web UI.',
@@ -736,6 +802,11 @@ export const gestureCardLesson: Lesson = {
       task: "Add a spatial tap handler to the card, e.g. onSpatialTap={() => setStatus('Spatial tap')}.",
       anchors: ['onClick', 'onSpatialTap'],
       validation: { type: 'contains', value: 'onSpatialTap' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onClick',
+        text: "        onSpatialTap={() => setStatus('Spatial tap')}",
+      },
       hint: 'Place onSpatialTap on the same spatialized element that has enable-xr.',
       experiment:
         'Keep both onClick and onSpatialTap so the example works in browser fallback and spatial runtime.',
@@ -753,6 +824,14 @@ export const gestureCardLesson: Lesson = {
       task: 'Add onSpatialDragStart, onSpatialDrag, and onSpatialDragEnd handlers that update the status label. The drag event exposes e.translationX and e.translationY.',
       anchors: ['onSpatialDragStart', 'onSpatialDrag', 'onSpatialDragEnd'],
       validation: { type: 'contains', value: 'onSpatialDrag' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onSpatialTap',
+        text:
+          "        onSpatialDragStart={() => setStatus('Drag started')}\n" +
+          "        onSpatialDrag={(e) => setStatus('Dragging ' + Math.round(e.translationX) + ', ' + Math.round(e.translationY))}\n" +
+          "        onSpatialDragEnd={() => setStatus('Drag ended')}",
+      },
       hint: 'Start with feedback text first. Moving the element can come after the gesture is connected.',
       experiment: 'Show drag feedback in the card before trying to move the card itself.',
       fallbackNote:
@@ -769,6 +848,15 @@ export const gestureCardLesson: Lesson = {
       task: 'Add onSpatialRotate and onSpatialMagnify handlers that update the status label. The magnify event exposes e.magnification (1 = 100%).',
       anchors: ['onSpatialRotate', 'onSpatialMagnify'],
       validation: { type: 'containsAll', values: ['onSpatialRotate', 'onSpatialMagnify'] },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onSpatialDragEnd',
+        text:
+          "        onSpatialRotate={() => setStatus('Rotating')}\n" +
+          "        onSpatialRotateEnd={() => setStatus('Rotate ended')}\n" +
+          "        onSpatialMagnify={(e) => setStatus('Magnify ' + Math.round(e.magnification * 100) + '%')}\n" +
+          "        onSpatialMagnifyEnd={() => setStatus('Magnify ended')}",
+      },
       hint: 'Keep this step focused on recognizing the gestures. Do not build a full transform editor yet.',
       fallbackNote:
         'Rotate and magnify run in a supported spatial runtime. Review the handlers here, then continue.',
