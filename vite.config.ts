@@ -1,7 +1,7 @@
 import path from "path";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
-import { CodeInspectorPlugin } from "@rdservices/aime-code-inspector";
+
 import WebSpatial from "@webspatial/vite-plugin";
 
 // https://vite.dev/config/
@@ -19,10 +19,6 @@ export default defineConfig({
     // so `enable-xr` markers, spatial events and --xr-* CSS vars are compiled.
     react({ jsxImportSource: "@webspatial/react-sdk" }),
     WebSpatial({ outputDir: "/" }),
-    // IMPORTANT: DO NOT REMOVE THIS!
-    CodeInspectorPlugin({
-      bundler: "vite",
-    }),
   ],
   resolve: {
     alias: {
