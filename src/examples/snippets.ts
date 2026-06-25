@@ -246,30 +246,21 @@ const model3d: Snippet = {
   id: 'model',
   title: '<Model> — 3D asset',
   blurb:
-    'The <Model> component renders a static 3D asset (.usdz / .glb / .reality) as real volumetric content on a headset while laying out as a 2D plane in the page. Swap the src to load any model live.',
+    'The <Model> component renders a static 3D asset (.usdz / .glb / .reality) as real volumetric content on a headset while laying out as a 2D plane in the page. Change the src to load any model live.',
   docs: [
     { label: '<Model>', url: DOCS + '/react-components/Model' },
     { label: '--xr-depth', url: DOCS + '/css-api/depth' },
   ],
-  code: `import { useState } from 'react'
-import { Model } from '@webspatial/react-sdk'
+  code: `import { Model } from '@webspatial/react-sdk'
 
-const MODELS = [
-  'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/refs/heads/main/Models/CarConcept/glTF-Binary/CarConcept.glb',
-  'https://developer.apple.com/augmented-reality/quick-look/models/retrotv/tv_retro.usdz',
-  'https://developer.apple.com/augmented-reality/quick-look/models/teapot/teapot.usdz',
-  'https://developer.apple.com/augmented-reality/quick-look/models/drummertoy/toy_drummer_idle.usdz',
-]
+const TEAPOT = 'https://developer.apple.com/augmented-reality/quick-look/models/teapot/teapot.usdz'
 
 export default function ModelDemo() {
-  const [i, setI] = useState(0)
-
   return (
-    <div style={{ display: 'grid', placeItems: 'center', height: '100%', gap: 16 }}>
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
       <Model
         enable-xr
-        key={MODELS[i]}
-        src={MODELS[i]}
+        src={TEAPOT}
         autoPlay
         loop
         style={{
@@ -282,15 +273,6 @@ export default function ModelDemo() {
         onLoad={() => console.log('model loaded')}
         onError={() => console.warn('model failed')}
       />
-      <button
-        onClick={() => setI((i + 1) % MODELS.length)}
-        style={{
-          padding: '8px 18px', borderRadius: 10, color: '#fde68a', cursor: 'pointer',
-          background: 'rgba(245,158,11,0.18)', border: '1px solid rgba(245,158,11,0.4)',
-        }}
-      >
-        Load next model →
-      </button>
     </div>
   )
 }`,
