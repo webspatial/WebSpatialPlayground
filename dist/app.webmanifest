@@ -1,0 +1,32 @@
+{
+  "name": "WebSpatial Playground",
+  "short_name": "WS Playground",
+  "description": "Interactive playground showcasing WebSpatial capabilities — real spatialized HTML elements, 3D content containers, spatial events and live controls.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#7c3aed",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "xr_main_scene": {
+    "type": "window",
+    "default_size": {
+      "width": 1400,
+      "height": 900
+    },
+    "resizability": {
+      "min_width": 900,
+      "min_height": 600
+    }
+  }
+}
