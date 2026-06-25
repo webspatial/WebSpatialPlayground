@@ -18,28 +18,40 @@ export type Validation =
 
 /**
  * A "do it for me" instruction: the exact edit a step is asking for, expressed
- * as a single insertion so Learn Mode can *type it in for you* — character by
- * character — instead of only describing it in a hint. Two shapes cover every
- * step:
+ * as a single change so Learn Mode can *type it in for you* — character by
+ * character. Every guided step carries one, so the user can always hand the
+ * edit to the tutorial instead of typing it themselves. Three shapes cover
+ * every step:
  *  - `insertLineAfter` adds a whole new line (its own indentation included)
  *    right after the first line that matches `anchor`.
  *  - `insertBefore` splices `text` in-line, right before the first occurrence of
  *    `anchor` — used to grow an existing string (e.g. a transform list).
+ *  - `replace` swaps the first occurrence of `anchor` for `text` — used to
+ *    change an existing value or trade a placeholder block for real content.
  */
 export type AutoType =
   | { mode: 'insertLineAfter'; anchor: string; text: string }
   | { mode: 'insertBefore'; anchor: string; text: string }
+  | { mode: 'replace'; anchor: string; text: string }
 
 /**
- * Resolve an {@link AutoType} against the current code into a concrete
- * `{ at, text }` insertion — the character offset to type at and the exact text
- * to type. Returns `null` when the anchor isn't present (the edit can't be
- * placed yet), so callers can fall back gracefully.
+ * Resolve an {@link AutoType} against the current code into a concrete edit:
+ * the character offset to type at, the exact text to type, and how many
+ * existing characters to remove there first (`removeLen`, for `replace`).
+ * Returns `null` when the anchor isn't present (the edit can't be placed yet),
+ * so callers can fall back gracefully.
  */
-export function resolveAutoType(code: string, a: AutoType): { at: number; text: string } | null {
+export function resolveAutoType(
+  code: string,
+  a: AutoType,
+): { at: number; text: string; removeLen: number } | null {
+  if (a.mode === 'replace') {
+    const idx = code.indexOf(a.anchor)
+    return idx === -1 ? null : { at: idx, text: a.text, removeLen: a.anchor.length }
+  }
   if (a.mode === 'insertBefore') {
     const idx = code.indexOf(a.anchor)
-    return idx === -1 ? null : { at: idx, text: a.text }
+    return idx === -1 ? null : { at: idx, text: a.text, removeLen: 0 }
   }
   // insertLineAfter — prefer an exact (trimmed) line match, else the first line
   // that merely contains the anchor, so anchors stay forgiving.
@@ -50,7 +62,7 @@ export function resolveAutoType(code: string, a: AutoType): { at: number; text: 
   let at = 0
   for (let i = 0; i < lineIdx; i++) at += lines[i].length + 1 // + newline
   at += lines[lineIdx].length // end of the anchor line, before its newline
-  return { at, text: '\n' + a.text }
+  return { at, text: '\n' + a.text, removeLen: 0 }
 }
 
 export interface TutorialStep {
@@ -68,15 +80,15 @@ export interface TutorialStep {
    */
   anchors?: string[]
   validation: Validation
-  hint?: string
   /**
    * Optional honest note for gestures the desktop preview can't trigger. Shown
    * only outside a spatial runtime, so the lesson never blocks on a headset.
    */
   fallbackNote?: string
   /**
-   * Optional "do it for me" edit. When present, the step offers to type the
-   * change into the editor for the user instead of only hinting at it.
+   * The "do it for me" edit. When present, the step offers to type the change
+   * into the editor for the user. Pure-observation steps (just "look at this"
+   * or drag a slider) omit it — there "do it for me" simply carries the step.
    */
   autoType?: AutoType
   /** Optional, low-key "try this" prompt. */
@@ -292,7 +304,6 @@ export const liftCardLesson: Lesson = {
       anchors: ['the card', 'enable-xr'],
       validation: { type: 'contains', value: 'enable-xr' },
       autoType: { mode: 'insertLineAfter', anchor: '<div', text: '        enable-xr' },
-      hint: 'Add enable-xr to the same <div> that styles the card.',
       completionMessage: 'Good — this card can now become spatial.',
       notYet: 'Not quite yet — add enable-xr to the card <div>, then try Next again.',
     },
@@ -304,7 +315,6 @@ export const liftCardLesson: Lesson = {
       anchors: ['width: 280', '--xr-back'],
       validation: { type: 'contains', value: "'--xr-back'" },
       autoType: { mode: 'insertLineAfter', anchor: 'style={{', text: "          '--xr-back': back + 'px'," },
-      hint: "Write the key as a quoted string with a comma: '--xr-back': back + 'px',",
       experiment: 'Try 40px, then 120px, and watch how the preview changes.',
       completionMessage: 'Now the card has depth.',
       notYet: "Not quite yet — add '--xr-back': back + 'px' to the style object, then try Next again.",
@@ -322,7 +332,6 @@ export const liftCardLesson: Lesson = {
         anchor: "'--xr-back'",
         text: "          '--xr-background-material': 'translucent',",
       },
-      hint: "Quoted key, string value: '--xr-background-material': 'translucent',",
       completionMessage: 'The card now has a spatial backplate.',
       notYet:
         "Not quite yet — add '--xr-background-material': 'translucent' to the style object, then try Next again.",
@@ -335,7 +344,6 @@ export const liftCardLesson: Lesson = {
       task: "Bind --xr-back to back + 'px', then drag the slider and watch the card move.",
       anchors: ['useState(80)', '--xr-back', 'type="range"'],
       validation: { type: 'sliderChanged' },
-      hint: 'The slider changes React state. That state becomes the value of --xr-back.',
       completionMessage:
         'You just made a normal React card spatial, moved it in depth, added a material, and controlled it with state.',
     },
@@ -464,7 +472,6 @@ export const rotateCardLesson: Lesson = {
         anchor: "'--xr-background-material'",
         text: "          transform: 'rotateY(-14deg)',",
       },
-      hint: 'Add the transform property inside the same style object as --xr-back.',
       experiment: 'Try rotateY(14deg), then rotateY(-24deg).',
       completionMessage: 'The card now turns in true 3D.',
       notYet: 'Not quite yet — add rotateY() to the card’s transform, then try Next again.',
@@ -478,7 +485,6 @@ export const rotateCardLesson: Lesson = {
       anchors: ['transform:'],
       validation: { type: 'contains', value: 'rotateX' },
       autoType: { mode: 'insertBefore', anchor: 'rotateY(', text: 'rotateX(8deg) ' },
-      hint: 'Use both transform functions in one string.',
       experiment: 'Try a small value first. Large rotations can make UI harder to read.',
       completionMessage: 'Now the card has a more natural spatial angle.',
       notYet: 'Not quite yet — add rotateX() to the same transform string, then try Next again.',
@@ -495,7 +501,6 @@ export const rotateCardLesson: Lesson = {
         anchor: 'transform:',
         text: "          transformOrigin: 'center center',",
       },
-      hint: 'Place transformOrigin next to the transform property.',
       experiment: 'Try top left, then return to center center.',
       completionMessage: 'The card now rotates around a clear pivot.',
       notYet:
@@ -510,7 +515,6 @@ export const rotateCardLesson: Lesson = {
       anchors: ['--xr-back', 'transform:'],
       validation: { type: 'contains', value: 'translateZ' },
       autoType: { mode: 'insertBefore', anchor: 'rotateX(', text: 'translateZ(40px) ' },
-      hint: 'Keep --xr-back in the style object. Add translateZ() inside the transform string.',
       experiment: 'Try translateZ(-20px) and notice how it differs from changing --xr-back.',
       completionMessage:
         'You used normal CSS transform syntax to move and rotate a spatialized element.',
@@ -645,7 +649,6 @@ export const materialCardLesson: Lesson = {
         anchor: "'--xr-back'",
         text: "          '--xr-background-material': 'translucent',",
       },
-      hint: "Place '--xr-background-material' next to '--xr-back'.",
       experiment: 'Try turning the property off and on to compare the difference.',
       completionMessage: 'The card now has a material backplate.',
       notYet:
@@ -659,7 +662,11 @@ export const materialCardLesson: Lesson = {
       task: "Change the card’s background to a low-alpha color, e.g. 'rgba(30, 20, 60, 0.18)'.",
       anchors: ['background:'],
       validation: { type: 'manual' },
-      hint: 'Look for the alpha value in rgba(...). Lower alpha means more of the material can show through.',
+      autoType: {
+        mode: 'replace',
+        anchor: "background: '#241a3d',",
+        text: "background: 'rgba(30, 20, 60, 0.18)',",
+      },
       experiment: 'Try alpha values like 0.1, 0.3, and 0.6.',
       completionMessage: 'Now the material can actually be seen.',
     },
@@ -676,7 +683,6 @@ export const materialCardLesson: Lesson = {
         anchor: 'background:',
         text: "          border: '1px solid rgba(139, 92, 246, 0.45)',",
       },
-      hint: 'Use a soft border, not a heavy outline.',
       experiment: 'Try a smaller radius, then a larger one, and compare how the panel feels.',
       completionMessage: 'The material now has a clear shape.',
       notYet:
@@ -690,7 +696,6 @@ export const materialCardLesson: Lesson = {
       task: "Switch '--xr-background-material' between 'transparent' and 'translucent' to feel the difference.",
       anchors: ['--xr-background-material'],
       validation: { type: 'manual' },
-      hint: 'Use transparent when you want the element to feel frameless. Use translucent when it needs a readable surface.',
       completionMessage:
         'You compared a frameless spatial element with one that has a material surface.',
     },
@@ -856,7 +861,6 @@ export const gestureCardLesson: Lesson = {
         anchor: 'enable-xr',
         text: "        onClick={() => setStatus('Clicked')}",
       },
-      hint: 'Start with onClick before adding spatial gesture handlers.',
       experiment: 'Change the status text and click again.',
       completionMessage: 'Good — the card still works like normal web UI.',
       notYet:
@@ -875,7 +879,6 @@ export const gestureCardLesson: Lesson = {
         anchor: 'onClick',
         text: "        onSpatialTap={() => setStatus('Spatial tap')}",
       },
-      hint: 'Place onSpatialTap on the same spatialized element that has enable-xr.',
       experiment:
         'Keep both onClick and onSpatialTap so the example works in browser fallback and spatial runtime.',
       fallbackNote:
@@ -900,7 +903,6 @@ export const gestureCardLesson: Lesson = {
           "        onSpatialDrag={(e) => setStatus('Dragging ' + Math.round(e.translationX) + ', ' + Math.round(e.translationY))}\n" +
           "        onSpatialDragEnd={() => setStatus('Drag ended')}",
       },
-      hint: 'Start with feedback text first. Moving the element can come after the gesture is connected.',
       experiment: 'Show drag feedback in the card before trying to move the card itself.',
       fallbackNote:
         'This gesture runs in a supported spatial runtime. You can still review the handlers here, then continue.',
@@ -925,7 +927,6 @@ export const gestureCardLesson: Lesson = {
           "        onSpatialMagnify={(e) => setStatus('Magnify ' + Math.round(e.magnification * 100) + '%')}\n" +
           "        onSpatialMagnifyEnd={() => setStatus('Magnify ended')}",
       },
-      hint: 'Keep this step focused on recognizing the gestures. Do not build a full transform editor yet.',
       fallbackNote:
         'Rotate and magnify run in a supported spatial runtime. Review the handlers here, then continue.',
       completionMessage:
@@ -971,9 +972,10 @@ export const gestureCardLesson: Lesson = {
  * local depth, then wire load/error feedback. It deliberately stops at static
  * model placement; <Reality> and programmable 3D come next.
  *
- * Only step 2 (the import) auto-types, because its anchor lives in the starter.
- * The remaining steps grow the user-authored <Model>, so they guide with hints
- * instead of typing into code whose exact shape we can't predict.
+ * Every step auto-types ("Do it for me"): the import lands first, the next step
+ * trades the placeholder block for a <Model>, and each later step anchors on
+ * that typed-in shape (the <Model> tag, the src line) to grow it one prop at a
+ * time — so the whole lesson can be completed entirely by the tutorial.
  */
 
 // Preserve the exact asset the existing playground demo loads — a real,
@@ -1110,7 +1112,6 @@ export const modelLesson: Lesson = {
         anchor: "import { useState } from 'react'",
         text: "import { Model } from '@webspatial/react-sdk'",
       },
-      hint: 'Add the import near the other React imports.',
       completionMessage: 'You can now render a WebSpatial model container.',
       notYet:
         "Not quite yet — import { Model } from '@webspatial/react-sdk', then try Next again.",
@@ -1122,7 +1123,28 @@ export const modelLesson: Lesson = {
       task: 'Replace the placeholder with a <Model> and set its src to the asset.',
       anchors: ['placeholder', '<Model', 'src='],
       validation: { type: 'contains', value: 'src=' },
-      hint: 'Use the asset the example already defines: replace the placeholder <div> with <Model src={TEAPOT} />.',
+      autoType: {
+        mode: 'replace',
+        anchor: `        {/* placeholder — the 2D region where the <Model> will go */}
+        <div
+          style={{
+            width: 320,
+            height: 320,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 20,
+            color: 'rgba(255,255,255,0.4)',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(124,58,237,0.06))',
+            border: '1px dashed rgba(245,158,11,0.35)',
+          }}
+        >
+          model placeholder
+        </div>`,
+        text: `        {/* <Model> holds real 3D content inside a normal React layout */}
+        <Model
+          src={TEAPOT}
+        />`,
+      },
       experiment: 'Try giving the <Model> a width and height and watch how the layout changes.',
       completionMessage: 'The page now contains a 3D model container.',
       notYet:
@@ -1136,7 +1158,11 @@ export const modelLesson: Lesson = {
       task: 'Add enable-xr to the <Model>.',
       anchors: ['<Model', 'enable-xr', 'src='],
       validation: { type: 'contains', value: 'enable-xr' },
-      hint: 'Add enable-xr directly on the component: <Model enable-xr src={TEAPOT} />.',
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: '<Model',
+        text: '          enable-xr',
+      },
       completionMessage: 'The model is now marked for spatial rendering.',
       notYet: 'Not quite yet — add enable-xr to the <Model>, then try Next again.',
     },
@@ -1148,7 +1174,19 @@ export const modelLesson: Lesson = {
       task: 'Add a style with width, height, and --xr-depth to the <Model>.',
       anchors: ['<Model', 'style=', '--xr-depth', 'width:', 'height:'],
       validation: { type: 'contains', value: '--xr-depth' },
-      hint: "Normal CSS size, then spatial depth: style={{ width: 320, height: 320, '--xr-depth': '160px' }}.",
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'src={TEAPOT}',
+        text: `          style={{
+            width: 320,
+            height: 320,
+            borderRadius: 20,
+            '--xr-depth': '160px',
+            '--xr-background-material': 'translucent',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(124,58,237,0.06))',
+            border: '1px solid rgba(245,158,11,0.25)',
+          }}`,
+      },
       experiment: 'Try a smaller and a larger --xr-depth value. Keep the model readable.',
       completionMessage: 'You gave the model a 2D layout box and a 3D local space.',
       notYet:
@@ -1162,7 +1200,13 @@ export const modelLesson: Lesson = {
       task: 'Add onLoad and onError handlers that update the status label.',
       anchors: ['status', 'onLoad', 'onError', 'setStatus'],
       validation: { type: 'contains', value: 'onError' },
-      hint: "Wire the events to the existing status state: onLoad={() => setStatus('Model loaded')} and onError={() => setStatus('Model failed to load')}.",
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'src={TEAPOT}',
+        text:
+          "          onLoad={() => setStatus('Model loaded')}\n" +
+          "          onError={() => setStatus('Model failed to load')}",
+      },
       completionMessage: 'The model now gives useful loading feedback.',
       notYet: 'Not quite yet — add onLoad and onError handlers to the <Model>, then try Next again.',
     },

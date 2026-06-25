@@ -1,12 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { docLinks } from './examples/snippets'
-import {
-  chapters,
-  chapterById,
-  chapterCanLearn,
-  nextLessonChapter,
-} from './tutorial/chapters'
+import { chapters, chapterCanLearn, nextLessonChapter } from './tutorial/chapters'
+import { chapterPath, defaultPath, learnPath, playgroundPath } from './lib/routes'
 import { RuntimeBadge } from './components/RuntimeBanner'
 import { ModeSwitcher, type AppMode } from './components/ModeSwitcher'
 import { ChapterRail } from './components/ChapterRail'
@@ -15,18 +12,15 @@ import { ChapterShell } from './components/tutorial/ChapterShell'
 import { PlaygroundShell } from './components/PlaygroundShell'
 import { BookOpen, Github, FileCode2 } from 'lucide-react'
 
-function App() {
-  // The user's *preferred* mode; the chapter may not offer a lesson, in which
-  // case we honour the preference but fall back to the playground (below).
-  const [mode, setMode] = useState<AppMode>('learn')
-  // The selected concept — shared by both modes, so flipping between Learn and
-  // Playground keeps the user on the same chapter.
-  const [chapterId, setChapterId] = useState(chapters[0].id)
+// `mode` comes from the route (`/learn/...` vs `/playground/...`); the concept
+// comes from the `:chapterId` URL param. The URL is the single source of truth
+// for what's on screen, so every lesson and playground has its own shareable
+// address and navigation is just a route change.
+function App({ mode }: { mode: AppMode }) {
+  const navigate = useNavigate()
+  const { chapterId = '' } = useParams()
 
-  const chapter = useMemo(() => chapterById(chapterId), [chapterId])
-  const canLearn = chapterCanLearn(chapter)
-  // What's actually shown: Learn only when the chapter has a lesson to teach.
-  const effectiveMode: AppMode = mode === 'learn' && canLearn ? 'learn' : 'playground'
+  const chapter = useMemo(() => chapters.find((c) => c.id === chapterId), [chapterId])
   const nextChapter = useMemo(() => nextLessonChapter(chapterId), [chapterId])
   // The chapter immediately after this one, regardless of whether it teaches a
   // lesson — used by a multi-lesson chapter's "next story" link, which may point
@@ -36,14 +30,26 @@ function App() {
     return chapters[idx + 1]
   }, [chapterId])
 
-  // Choosing Learn on a demo-only chapter jumps to the nearest one that teaches,
-  // so the Learn toggle always lands on something to learn.
+  // Unknown concept in the URL → bounce to the default landing route.
+  if (!chapter) return <Navigate to={defaultPath()} replace />
+
+  // A concept can teach as a single lesson or a multi-lesson chapter.
+  const canLearn = chapterCanLearn(chapter)
+  // Learn requested on a demo-only chapter → redirect to its playground so the
+  // URL always reflects exactly what's shown.
+  if (mode === 'learn' && !canLearn) {
+    return <Navigate to={playgroundPath(chapter.id)} replace />
+  }
+
+  // Switching modes keeps the user on the same concept. Asking to Learn a
+  // demo-only chapter instead jumps to the nearest one that actually teaches.
   const onModeChange = (m: AppMode) => {
     if (m === 'learn' && !canLearn) {
-      const firstLesson = chapters.find(chapterCanLearn)
-      if (firstLesson) setChapterId(firstLesson.id)
+      const firstLesson = chapters.find(chapterCanLearn) ?? chapter
+      navigate(learnPath(firstLesson.id))
+    } else {
+      navigate(chapterPath(m, chapter.id))
     }
-    setMode(m)
   }
 
   return (
@@ -54,7 +60,7 @@ function App() {
           <a href={docLinks.docs} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5">
             <img src="/webspatial-logo.svg" alt="WebSpatial" className="h-[18px] w-auto opacity-90" />
           </a>
-          <ModeSwitcher mode={effectiveMode} onChange={onModeChange} />
+          <ModeSwitcher mode={mode} onChange={onModeChange} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -65,7 +71,7 @@ function App() {
             <BookOpen size={13} />Docs
           </a>
           {/* Heavier doc links stay in Playground Mode to keep Learn Mode quiet. */}
-          {effectiveMode === 'playground' && (
+          {mode === 'playground' && (
             <>
               <a href={docLinks.llms} target="_blank" rel="noopener noreferrer"
                 title="Full LLM-readable documentation"
@@ -83,30 +89,31 @@ function App() {
 
       {/* ─── Body: shared chapter rail + the active mode ─── */}
       <div className="flex min-h-0 flex-1">
-        <ChapterRail activeId={chapterId} mode={effectiveMode} onSelect={setChapterId} />
+        <ChapterRail
+          activeId={chapter.id}
+          mode={mode}
+          onSelect={(id) => navigate(chapterPath(mode, id))}
+        />
         <div className="flex min-h-0 flex-1 flex-col">
-          {effectiveMode === 'learn' && chapter.lessonChapter ? (
+          {mode === 'learn' && chapter.lessonChapter ? (
             <ChapterShell
               // Remount on chapter change so cross-lesson state resets cleanly.
               key={chapter.lessonChapter.id}
               chapter={chapter.lessonChapter}
-              onOpenPlayground={() => setMode('playground')}
+              onOpenPlayground={() => navigate(playgroundPath(chapter.id))}
               onNextStory={
                 rawNextChapter
-                  ? () => {
-                      setChapterId(rawNextChapter.id)
-                      setMode('playground')
-                    }
+                  ? () => navigate(playgroundPath(rawNextChapter.id))
                   : undefined
               }
             />
-          ) : effectiveMode === 'learn' && chapter.lesson ? (
+          ) : mode === 'learn' && chapter.lesson ? (
             <TutorialShell
               // Remount on lesson change so the shell reseeds its editor + phase.
               key={chapter.lesson.id}
               lesson={chapter.lesson}
-              onOpenPlayground={() => setMode('playground')}
-              onNextLesson={nextChapter ? () => setChapterId(nextChapter.id) : undefined}
+              onOpenPlayground={() => navigate(playgroundPath(chapter.id))}
+              onNextLesson={nextChapter ? () => navigate(learnPath(nextChapter.id)) : undefined}
             />
           ) : (
             <PlaygroundShell activeId={chapter.snippet.id} />

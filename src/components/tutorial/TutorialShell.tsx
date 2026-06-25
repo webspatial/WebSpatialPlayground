@@ -53,7 +53,6 @@ export function TutorialShell({
   const [code, setCode] = useState(lesson.starterCode)
   // Code as it was when the current step began — the target for "Reset step".
   const [stepStartCode, setStepStartCode] = useState(lesson.starterCode)
-  const [hintOpen, setHintOpen] = useState(false)
   const [notYet, setNotYet] = useState<string | null>(null)
   const [sliderTouched, setSliderTouched] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -118,20 +117,26 @@ export function TutorialShell({
   useEffect(() => () => cancelTyping(), [])
 
   /**
-   * "Do it for me": type this step's edit into the editor for the user, one
-   * character at a time, lighting up the new text as it lands. The step's own
-   * validation then trips automatically once the full insertion is in.
+   * "Do it for me": every step offers this. Steps with a concrete edit get it
+   * typed into the editor for the user, one character at a time, lighting up the
+   * new text as it lands — the step's own validation then trips once the full
+   * edit is in. Observation / slider steps have nothing to type, so "do it for
+   * me" simply carries them forward.
    */
   const doItForMe = () => {
-    if (!step?.autoType || autoTyping) return
-    const target = resolveAutoType(code, step.autoType)
-    if (!target) return
+    if (autoTyping) return
+    const target = step?.autoType ? resolveAutoType(code, step.autoType) : null
+    if (!target) {
+      // Nothing to type (or the anchor isn't present): just advance the step.
+      onNext()
+      return
+    }
 
     setNotYet(null)
-    setHintOpen(false)
     setAutoTyping(true)
-    const base = code
-    const { at, text } = target
+    const { at, text, removeLen } = target
+    // For a `replace` edit, drop the anchored text first, then type into the gap.
+    const base = code.slice(0, at) + code.slice(at + removeLen)
 
     let i = 0
     const tick = () => {
@@ -162,7 +167,6 @@ export function TutorialShell({
     cancelTyping()
     setStepIndex(i)
     setStepStartCode(code)
-    setHintOpen(false)
     setNotYet(null)
     setSliderTouched(false)
   }
@@ -198,7 +202,6 @@ export function TutorialShell({
   const resetStep = () => {
     cancelTyping()
     setCode(stepStartCode)
-    setHintOpen(false)
     setNotYet(null)
     setSliderTouched(false)
   }
@@ -209,7 +212,6 @@ export function TutorialShell({
     setStepStartCode(lesson.starterCode)
     setPhase('intro')
     setStepIndex(0)
-    setHintOpen(false)
     setNotYet(null)
     setSliderTouched(false)
   }
@@ -311,8 +313,6 @@ export function TutorialShell({
                 step={step}
                 index={stepIndex}
                 total={total}
-                hintOpen={hintOpen}
-                onToggleHint={() => setHintOpen((v) => !v)}
                 onDoItForMe={doItForMe}
                 autoTyping={autoTyping}
                 notYet={notYet}
