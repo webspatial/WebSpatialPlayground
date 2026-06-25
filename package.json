@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "vite",
     "dev:avp": "XR_ENV=avp vite",
-    "build": "vite build && XR_ENV=avp vite build",
-    "build:spatial": "vite build && XR_ENV=avp vite build && node scripts/make-spatial-only.mjs",
+    "build": "XR_ENV=avp vite build",
+    "build:spatial": "XR_ENV=avp vite build",
     "build:web": "vite build",
-    "build:avp": "XR_ENV=avp vite build",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "preview": "vite preview"

@@ -12,13 +12,13 @@ import WebSpatial from "@webspatial/vite-plugin";
 // handling for the spatial (avp) variant.
 //
 //   - `vite build`            -> web/flat variant at base "/"   -> dist/
-//   - `XR_ENV=avp vite build` -> spatial variant  base "/webspatial/avp/" -> dist/webspatial/avp/
+//   - `XR_ENV=avp vite build` -> spatial variant  base "/"      -> dist/
 export default defineConfig({
   plugins: [
     // jsxImportSource makes @vitejs/plugin-react emit the WebSpatial JSX runtime
     // so `enable-xr` markers, spatial events and --xr-* CSS vars are compiled.
     react({ jsxImportSource: "@webspatial/react-sdk" }),
-    WebSpatial(),
+    WebSpatial({ outputDir: "/" }),
     // IMPORTANT: DO NOT REMOVE THIS!
     CodeInspectorPlugin({
       bundler: "vite",

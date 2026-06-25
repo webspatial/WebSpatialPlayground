@@ -1,50 +1,44 @@
-# React + TypeScript + Vite
+# WebSpatial Playground
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive examples, live code snippets, and a community gallery for spatial web development with [WebSpatial](https://webspatial.dev).
 
-Currently, two official plugins are available:
+Built with React, TypeScript, Vite, and the [WebSpatial SDK](https://github.com/webspatial/webspatial-sdk).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
 
-## Expanding the ESLint configuration
+- **CSS API** — Spatialize HTML elements with `--xr-back`, `--xr-transform`, `--xr-background-material`, and `--xr-depth` CSS custom properties
+- **React Components** — `<enable-xr>`, `<model>`, and `<reality>` JSX components for spatial content
+- **Event API** — Spatial tap, drag, rotate, and magnify gesture handlers
+- **JS / Manifest API** — Scene initialization, viewport metrics, user agent detection, and `app.webmanifest` configuration
+- **Community Gallery** — Browse spatial apps built by the community
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Getting Started
 
-- Configure the top-level `parserOptions` property like this:
+```bash
+# Install dependencies
+npm install
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+# Start dev server (2D web mode)
+npm run dev
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Build
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+```bash
+# Build for spatial runtime (Apple Vision Pro / PICO OS 6)
+npm run build
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+# Build for flat 2D web
+npm run build:web
 ```
+
+The spatial build outputs to `dist/` and is ready for deployment on Vercel or any static host.
+
+## Deployment
+
+This project is configured for [Vercel](https://vercel.com). The `vercel.json` config ensures SPA routing works correctly.
+
+## Links
+
+- [WebSpatial Docs](https://webspatial.dev/docs)
+- [WebSpatial SDK on GitHub](https://github.com/webspatial/webspatial-sdk)
