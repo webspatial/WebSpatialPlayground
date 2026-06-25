@@ -78,8 +78,8 @@ export function StepCard({
       {/* Hint (revealed on request) */}
       {step.hint && <HintPanel hint={step.hint} open={hintOpen} />}
 
-      {/* Gentle not-yet copy */}
-      {notYet && (
+      {/* Gentle not-yet copy — never shown once the step is already satisfied. */}
+      {notYet && !completed && (
         <p className="m-0 rounded-lg border border-amber-400/20 bg-amber-400/[0.06] px-3 py-2 text-[12.5px] leading-relaxed text-amber-100/80">
           {notYet}
         </p>
