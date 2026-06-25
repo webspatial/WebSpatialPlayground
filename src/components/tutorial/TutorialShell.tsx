@@ -17,6 +17,8 @@ function isSatisfied(step: TutorialStep, code: string, sliderTouched: boolean): 
   switch (step.validation.type) {
     case 'contains':
       return code.includes(step.validation.value)
+    case 'containsAll':
+      return step.validation.values.every((v) => code.includes(v))
     case 'sliderChanged':
       return sliderTouched
     case 'manual':
@@ -102,8 +104,11 @@ export function TutorialShell({
       setNotYet('The preview is waiting for valid code. Fix the highlighted issue, then continue.')
       return
     }
-    // `contains` steps gate progress; manual / slider steps always advance.
-    if (step.validation.type === 'contains' && !code.includes(step.validation.value)) {
+    // `contains` / `containsAll` steps gate progress; manual / slider steps
+    // always advance.
+    const isCodeCheck =
+      step.validation.type === 'contains' || step.validation.type === 'containsAll'
+    if (isCodeCheck && !isSatisfied(step, code, sliderTouched)) {
       setNotYet(step.notYet ?? 'Not quite yet — make the edit above, then try Next again.')
       return
     }
@@ -209,6 +214,9 @@ export function TutorialShell({
                 hintOpen={hintOpen}
                 onToggleHint={() => setHintOpen((v) => !v)}
                 notYet={notYet}
+                // Honest "this runs on a headset" note for gestures the flat
+                // desktop preview can't trigger — never shown inside a runtime.
+                fallbackNote={!rt.isSpatial ? step.fallbackNote : undefined}
                 completed={completed}
                 nextLabel={nextLabel}
                 onReset={resetStep}
