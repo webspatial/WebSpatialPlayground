@@ -32,9 +32,12 @@ function isSatisfied(step: TutorialStep, code: string, sliderTouched: boolean): 
 export function TutorialShell({
   lesson,
   onOpenPlayground,
+  onNextLesson,
 }: {
   lesson: Lesson
   onOpenPlayground: () => void
+  /** Advance to the next lesson, when one exists in the progression. */
+  onNextLesson?: () => void
 }) {
   const [phase, setPhase] = useState<Phase>('intro')
   const [stepIndex, setStepIndex] = useState(0)
@@ -45,6 +48,9 @@ export function TutorialShell({
   const [notYet, setNotYet] = useState<string | null>(null)
   const [sliderTouched, setSliderTouched] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Whether the current editor source compiles + renders. Gates Next so the
+  // user can't advance past code that doesn't run yet.
+  const [previewValid, setPreviewValid] = useState(true)
 
   const step = lesson.steps[stepIndex]
   const total = lesson.steps.length
@@ -83,6 +89,11 @@ export function TutorialShell({
 
   const onNext = () => {
     if (!step) return
+    // Never advance past code that doesn't compile — point at the editor instead.
+    if (!previewValid) {
+      setNotYet('The preview is waiting for valid code. Fix the highlighted issue, then continue.')
+      return
+    }
     // `contains` steps gate progress; manual / slider steps always advance.
     if (step.validation.type === 'contains' && !code.includes(step.validation.value)) {
       setNotYet(step.notYet ?? 'Not quite yet — make the edit above, then try Next again.')
@@ -165,6 +176,7 @@ export function TutorialShell({
           <LivePreview
             source={code}
             onRangeInput={() => setSliderTouched(true)}
+            onValidityChange={setPreviewValid}
             annotation={annotation}
             gentleErrors
           />
@@ -194,6 +206,7 @@ export function TutorialShell({
               onCopyFinal={copyFinal}
               onResetLesson={resetLesson}
               onOpenPlayground={onOpenPlayground}
+              onNextLesson={onNextLesson}
             />
           )}
         </div>

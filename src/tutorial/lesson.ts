@@ -192,10 +192,10 @@ export const liftCardLesson: Lesson = {
       id: 'xr-back',
       title: 'Move it on the Z axis',
       explanation: '--xr-back moves the spatialized element away from the page plane.',
-      task: "Set --xr-back to 80px inside the card's style object.",
+      task: "Add '--xr-back': back + 'px' to the card's style object. CSS custom properties are quoted string keys in JS.",
       anchors: ['width: 280', '--xr-back'],
-      validation: { type: 'contains', value: '--xr-back' },
-      hint: "Add --xr-back inside the card's style object.",
+      validation: { type: 'contains', value: "'--xr-back'" },
+      hint: "Write the key as a quoted string with a comma: '--xr-back': back + 'px',",
       experiment: 'Try 40px, then 120px, and watch how the preview changes.',
       completionMessage: 'Now the card has depth.',
       notYet: "Not quite yet — add '--xr-back': back + 'px' to the style object, then try Next again.",
@@ -205,10 +205,10 @@ export const liftCardLesson: Lesson = {
       title: 'Add a material background',
       explanation:
         'Material backgrounds let the card use a native-feeling spatial surface when WebSpatial is available.',
-      task: 'Set --xr-background-material to translucent.',
+      task: "Add '--xr-background-material': 'translucent' next to --xr-back. The key stays quoted, just like --xr-back.",
       anchors: ['--xr-back', '--xr-background-material'],
-      validation: { type: 'contains', value: '--xr-background-material' },
-      hint: 'Place this next to --xr-back in the style object.',
+      validation: { type: 'contains', value: "'--xr-background-material'" },
+      hint: "Quoted key, string value: '--xr-background-material': 'translucent',",
       completionMessage: 'The card now has a spatial backplate.',
       notYet:
         "Not quite yet — add '--xr-background-material': 'translucent' to the style object, then try Next again.",
@@ -242,10 +242,180 @@ export const liftCardLesson: Lesson = {
   },
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Chapter: CSS API: Spatial Transform · Lesson 2                         */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Story 1 lifted the card away from the page. Story 2 turns and moves that same
+ * spatial card using normal CSS `transform` syntax — no new `--xr-` property.
+ * The starter is the completed card from Story 1 (enable-xr + --xr-back +
+ * material); each step adds one transform idea to the very same style object.
+ * This is the old "True 3D transform" demo, reframed as a guided lesson.
+ */
+
+const rotateStarterCode = `export default function SpatialCard() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* the spatial card — already lifted off the page in Story 1 */}
+      <div
+        enable-xr
+        style={{
+          '--xr-back': '60px',
+          '--xr-background-material': 'translucent',
+          width: 240,
+          padding: 26,
+          borderRadius: 20,
+          color: '#ede9fe',
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.30), rgba(217,70,239,0.10))',
+          border: '1px solid rgba(139,92,246,0.45)',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Spatial card</h2>
+        <p style={{ fontSize: 13, opacity: 0.7, margin: '10px 0 0' }}>
+          Lifted off the page with --xr-back. Now turn it in space.
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+const rotateFinalCode = `export default function SpatialCard() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* the spatial card — already lifted off the page in Story 1 */}
+      <div
+        enable-xr
+        style={{
+          '--xr-back': '60px',
+          '--xr-background-material': 'translucent',
+          // Spatial Transform: plain CSS transform syntax, no --xr- prefix.
+          transform: 'translateZ(40px) rotateX(8deg) rotateY(-14deg)',
+          transformOrigin: 'center center',
+          width: 240,
+          padding: 26,
+          borderRadius: 20,
+          color: '#ede9fe',
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.30), rgba(217,70,239,0.10))',
+          border: '1px solid rgba(139,92,246,0.45)',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Spatial card</h2>
+        <p style={{ fontSize: 13, opacity: 0.7, margin: '10px 0 0' }}>
+          Turned in true 3D with a normal CSS transform.
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+export const rotateCardLesson: Lesson = {
+  id: 'rotate-card',
+  chapter: 'CSS API: Spatial Transform',
+  title: 'Rotate a spatial card in true 3D',
+  intro:
+    'Now that the card can float in space, rotate it with standard CSS transform syntax.',
+  learn: [
+    'How Spatial Transform builds on enable-xr',
+    'How rotateY() turns a spatialized element',
+    'How rotateX() tilts a spatialized element',
+    'How transform-origin changes the pivot',
+    'How translateZ() differs from --xr-back',
+  ],
+  fileName: 'SpatialCard.tsx',
+  starterCode: rotateStarterCode,
+  finalCode: rotateFinalCode,
+  steps: [
+    {
+      id: 'start-spatial',
+      title: 'Start from a spatial card',
+      explanation:
+        'This card is already spatial. Now you’ll use normal CSS transform to rotate it in space.',
+      task: 'Find the card’s style object in the editor.',
+      anchors: ['the spatial card', 'enable-xr', '--xr-back'],
+      validation: { type: 'manual' },
+      completionMessage: 'This is your starting point: a spatial card ready for transform.',
+    },
+    {
+      id: 'rotate-y',
+      title: 'Rotate around the Y axis',
+      explanation: 'rotateY() turns the card left or right around its vertical axis.',
+      task: "Add rotateY(-14deg) to the card’s transform.",
+      anchors: ['--xr-background-material', 'transform:'],
+      validation: { type: 'contains', value: 'rotateY' },
+      hint: 'Add the transform property inside the same style object as --xr-back.',
+      experiment: 'Try rotateY(14deg), then rotateY(-24deg).',
+      completionMessage: 'The card now turns in true 3D.',
+      notYet: 'Not quite yet — add rotateY() to the card’s transform, then try Next again.',
+    },
+    {
+      id: 'rotate-x',
+      title: 'Tilt around the X axis',
+      explanation:
+        'rotateX() tilts the card forward or backward around its horizontal axis.',
+      task: 'Add rotateX(8deg) before or after the Y rotation.',
+      anchors: ['transform:'],
+      validation: { type: 'contains', value: 'rotateX' },
+      hint: 'Use both transform functions in one string.',
+      experiment: 'Try a small value first. Large rotations can make UI harder to read.',
+      completionMessage: 'Now the card has a more natural spatial angle.',
+      notYet: 'Not quite yet — add rotateX() to the same transform string, then try Next again.',
+    },
+    {
+      id: 'transform-origin',
+      title: 'Change the pivot with transform-origin',
+      explanation: 'transform-origin controls the point the card rotates around.',
+      task: "Set transformOrigin to 'center center'.",
+      anchors: ['transform:', 'transformOrigin'],
+      validation: { type: 'contains', value: 'transformOrigin' },
+      hint: 'Place transformOrigin next to the transform property.',
+      experiment: 'Try top left, then return to center center.',
+      completionMessage: 'The card now rotates around a clear pivot.',
+      notYet:
+        "Not quite yet — add transformOrigin: 'center center' next to transform, then try Next again.",
+    },
+    {
+      id: 'translate-z',
+      title: 'Compare --xr-back and translateZ()',
+      explanation:
+        '--xr-back positions the spatial element along Z. translateZ() visually shifts it from that position as part of the transform.',
+      task: 'Add translateZ(40px) to the transform and compare it with --xr-back.',
+      anchors: ['--xr-back', 'transform:'],
+      validation: { type: 'contains', value: 'translateZ' },
+      hint: 'Keep --xr-back in the style object. Add translateZ() inside the transform string.',
+      experiment: 'Try translateZ(-20px) and notice how it differs from changing --xr-back.',
+      completionMessage:
+        'You used normal CSS transform syntax to move and rotate a spatialized element.',
+      notYet:
+        'Not quite yet — add translateZ() inside the transform string, then try Next again.',
+    },
+  ],
+  wrapUp: {
+    title: 'What you built',
+    copy: 'You started with a spatial card, then rotated it around the X and Y axes, changed its pivot, and compared layout depth with visual transform depth.',
+    concepts: [
+      'Spatial Transform uses normal CSS transform.',
+      'rotateX() and rotateY() rotate a spatialized element in true 3D.',
+      'transform-origin controls the pivot.',
+      '--xr-back positions the element on the Z axis.',
+      'translateZ() visually shifts the element as part of its transform.',
+      'Spatial Transform changes appearance, not the element’s normal layout bounds.',
+    ],
+  },
+  next: {
+    title: 'CSS API: background-material',
+    note: 'coming next',
+  },
+}
+
+/** Lessons in order — Learn Mode walks them as a chapter-based progression. */
+export const lessons: Lesson[] = [liftCardLesson, rotateCardLesson]
+
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
 export const upcomingLessons: LockedLesson[] = [
-  { title: 'CSS API: Spatial Transform', note: 'coming next' },
-  { title: 'CSS API: background-material', note: 'locked' },
+  { title: 'CSS API: background-material', note: 'coming next' },
   { title: 'Natural Interactions', note: 'locked' },
   { title: '3D Content Containers: <Model>', note: 'locked' },
   { title: '3D Content Containers: <Reality>', note: 'locked' },

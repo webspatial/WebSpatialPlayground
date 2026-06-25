@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { PartyPopper, Copy, Check, RotateCcw, Lock } from 'lucide-react'
+import { PartyPopper, Copy, Check, RotateCcw, Lock, ArrowRight } from 'lucide-react'
 import type { Lesson } from '@/tutorial/lesson'
 import { PlaygroundModeLink } from './PlaygroundModeLink'
 
@@ -13,11 +13,14 @@ export function WrapUp({
   onCopyFinal,
   onResetLesson,
   onOpenPlayground,
+  onNextLesson,
 }: {
   lesson: Lesson
   onCopyFinal: () => void
   onResetLesson: () => void
   onOpenPlayground: () => void
+  /** When set, the next lesson is unlocked and the row becomes a Start button. */
+  onNextLesson?: () => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -71,20 +74,34 @@ export function WrapUp({
         <PlaygroundModeLink onOpen={onOpenPlayground} />
       </div>
 
-      {lesson.next && (
-        <div className="mt-1 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-white/40">
-          <Lock size={12} className="shrink-0" />
-          <span>
-            Next lesson:{' '}
-            <span className="text-white/55">{lesson.next.title}</span>
-          </span>
-          {lesson.next.note && (
-            <span className="ml-auto rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/35">
-              {lesson.next.note}
+      {lesson.next &&
+        (onNextLesson ? (
+          // The next lesson is built — let the user walk straight into it.
+          <button
+            onClick={onNextLesson}
+            className="mt-1 flex items-center gap-2 rounded-lg border border-violet-400/25 bg-violet-500/10 px-3 py-2 text-[12px] text-violet-100/90 transition-colors hover:bg-violet-500/20"
+          >
+            <span>
+              Next lesson:{' '}
+              <span className="font-medium text-white">{lesson.next.title}</span>
             </span>
-          )}
-        </div>
-      )}
+            <ArrowRight size={13} className="ml-auto shrink-0 text-violet-300/80" />
+          </button>
+        ) : (
+          // Not built yet — shown quietly as "coming next", never distracting.
+          <div className="mt-1 flex items-center gap-2 rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[12px] text-white/40">
+            <Lock size={12} className="shrink-0" />
+            <span>
+              Next lesson:{' '}
+              <span className="text-white/55">{lesson.next.title}</span>
+            </span>
+            {lesson.next.note && (
+              <span className="ml-auto rounded-full border border-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/35">
+                {lesson.next.note}
+              </span>
+            )}
+          </div>
+        ))}
     </div>
   )
 }
