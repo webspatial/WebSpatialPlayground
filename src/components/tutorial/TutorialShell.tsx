@@ -75,11 +75,16 @@ export function TutorialShell({
   // Spotlight the lines this step teaches.
   const anchors = phase === 'steps' ? step?.anchors : undefined
 
-  // Honest fallback note once --xr-back is in play and we're in a flat browser.
-  const annotation =
-    !rt.isSpatial && code.includes('--xr-back')
-      ? '--xr-back is active — flat here, lifted in the WebSpatial Runtime'
-      : undefined
+  // Honest fallback note in a flat browser: <Model>/--xr-depth lessons get a
+  // model-specific reassurance, otherwise the --xr-back depth note. Keyed on the
+  // code's own content, so it's correct for whichever lesson is loaded.
+  const annotation = !rt.isSpatial
+    ? code.includes('<Model') || code.includes('--xr-depth')
+      ? 'The model container is set up — full spatial rendering needs a supported WebSpatial Runtime.'
+      : code.includes('--xr-back')
+        ? '--xr-back is active — flat here, lifted in the WebSpatial Runtime'
+        : undefined
+    : undefined
 
   // Any edit is a fresh attempt: dismiss the previous "not quite yet" nudge so a
   // stale message can't sit next to a now-valid preview and completion note.

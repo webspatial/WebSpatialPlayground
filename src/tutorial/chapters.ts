@@ -39,8 +39,16 @@ export function chapterById(id: string): Chapter {
   return chapters.find((c) => c.id === id) ?? chapters[0]
 }
 
-/** The next chapter after `id` that has a guided lesson, if any. */
+/**
+ * The lesson to walk into after `id` — but only when it's the *immediately*
+ * following chapter. We don't leap over an unbuilt chapter to a later lesson:
+ * if the next concept has no lesson yet, the wrap-up keeps its calm "coming
+ * next" lock instead of offering a button that would skip ahead. (With Story 5
+ * built but Story 4 not, this keeps Story 3 → "Natural Interactions" locked and
+ * Story 5 → "<Reality>" locked, rather than jumping past the gap.)
+ */
 export function nextLessonChapter(id: string): Chapter | undefined {
   const idx = chapters.findIndex((c) => c.id === id)
-  return chapters.slice(idx + 1).find((c) => c.lesson)
+  const next = chapters[idx + 1]
+  return next?.lesson ? next : undefined
 }

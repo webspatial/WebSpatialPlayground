@@ -638,12 +638,249 @@ export const materialCardLesson: Lesson = {
   },
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Chapter: 3D Content Containers: <Model> · Lesson 5                      */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Stories 1–4 taught spatialized HTML: a normal element made spatial, rotated,
+ * given a material, and made interactive. Story 5 introduces the first 3D
+ * *content container* — <Model>, a normal-looking element in the page that can
+ * hold a real, prebuilt 3D asset. This is the old "<Model> — 3D asset" demo,
+ * reframed as a guided lesson.
+ *
+ * The arc mirrors that demo exactly — same import, same Apple Quick Look teapot
+ * asset, same props (enable-xr, src, --xr-depth, --xr-background-material,
+ * onLoad/onError) — but builds it one concept at a time: start from a 2D
+ * placeholder, import <Model>, point src at the asset, mark it spatial, give it
+ * local depth, then wire load/error feedback. It deliberately stops at static
+ * model placement; <Reality> and programmable 3D come next.
+ *
+ * Only step 2 (the import) auto-types, because its anchor lives in the starter.
+ * The remaining steps grow the user-authored <Model>, so they guide with hints
+ * instead of typing into code whose exact shape we can't predict.
+ */
+
+// Preserve the exact asset the existing playground demo loads — a real,
+// reachable Apple Quick Look sample, not an invented URL.
+const MODEL_ASSET =
+  "https://developer.apple.com/augmented-reality/quick-look/models/teapot/teapot.usdz"
+
+const modelStarterCode = `import { useState } from 'react'
+
+// The prebuilt 3D asset we'll place in the page (Apple Quick Look sample).
+const TEAPOT = '${MODEL_ASSET}'
+
+export default function ModelLesson() {
+  const [status, setStatus] = useState('')
+
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+      <div style={{ textAlign: 'center', color: '#ede9fe' }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>A 3D model goes here</h2>
+        <p style={{ fontSize: 13, opacity: 0.65, margin: '8px 0 18px' }}>
+          A normal React layout. The model will live in the region below.
+        </p>
+
+        {/* placeholder — the 2D region where the <Model> will go */}
+        <div
+          style={{
+            width: 320,
+            height: 320,
+            display: 'grid',
+            placeItems: 'center',
+            borderRadius: 20,
+            color: 'rgba(255,255,255,0.4)',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(124,58,237,0.06))',
+            border: '1px dashed rgba(245,158,11,0.35)',
+          }}
+        >
+          model placeholder
+        </div>
+
+        {status && (
+          <p style={{ fontFamily: 'monospace', fontSize: 12, opacity: 0.7, margin: '14px 0 0' }}>
+            {status}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}`
+
+const modelFinalCode = `import { useState } from 'react'
+import { Model } from '@webspatial/react-sdk'
+
+// The prebuilt 3D asset we'll place in the page (Apple Quick Look sample).
+const TEAPOT = '${MODEL_ASSET}'
+
+export default function ModelLesson() {
+  const [status, setStatus] = useState('')
+
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+      <div style={{ textAlign: 'center', color: '#ede9fe' }}>
+        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>A 3D model in the page</h2>
+        <p style={{ fontSize: 13, opacity: 0.65, margin: '8px 0 18px' }}>
+          A normal React layout — with a real 3D model inside it.
+        </p>
+
+        {/* <Model> lays out as a 2D plane, but holds real volumetric 3D content.
+            On a headset it renders in space; in a browser it falls back flat. */}
+        <Model
+          enable-xr
+          src={TEAPOT}
+          style={{
+            width: 320,
+            height: 320,
+            borderRadius: 20,
+            '--xr-depth': '160px',
+            '--xr-background-material': 'translucent',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.10), rgba(124,58,237,0.06))',
+            border: '1px solid rgba(245,158,11,0.25)',
+          }}
+          onLoad={() => setStatus('Model loaded')}
+          onError={() => setStatus('Model failed to load')}
+        />
+
+        {status && (
+          <p style={{ fontFamily: 'monospace', fontSize: 12, opacity: 0.7, margin: '14px 0 0' }}>
+            {status}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}`
+
+export const modelLesson: Lesson = {
+  id: 'place-model',
+  // Docs-aligned title — equals the matching snippet's title so chapters.ts
+  // joins the guided lesson and the open demo into one concept.
+  chapter: '3D Content Containers: <Model>',
+  title: 'Place a 3D asset inside the page',
+  intro:
+    "Now that you can make HTML spatial, add a prebuilt 3D model with WebSpatial's <Model> component.",
+  learn: [
+    'How <Model> fits into normal React layout',
+    'How src loads a model asset',
+    'How enable-xr makes the model spatial',
+    'How --xr-depth gives the model local 3D space',
+    'How to keep browser fallback understandable',
+  ],
+  fileName: 'ModelLesson.tsx',
+  starterCode: modelStarterCode,
+  finalCode: modelFinalCode,
+  steps: [
+    {
+      id: 'placeholder',
+      title: 'Start with a model placeholder',
+      explanation:
+        'This starts as a normal React layout. The model will live inside one region of the page.',
+      task: 'Find the placeholder where the 3D model should appear.',
+      anchors: ['placeholder'],
+      validation: { type: 'manual' },
+      completionMessage: 'This is the 2D space where the model will go.',
+    },
+    {
+      id: 'import-model',
+      title: 'Import the <Model> component',
+      explanation:
+        "<Model> is WebSpatial's static 3D content container for prebuilt model files.",
+      task: 'Import Model from the WebSpatial React SDK.',
+      anchors: ["import { useState }", '@webspatial/react-sdk'],
+      validation: { type: 'contains', value: '@webspatial/react-sdk' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: "import { useState } from 'react'",
+        text: "import { Model } from '@webspatial/react-sdk'",
+      },
+      hint: 'Add the import near the other React imports.',
+      completionMessage: 'You can now render a WebSpatial model container.',
+      notYet:
+        "Not quite yet — import { Model } from '@webspatial/react-sdk', then try Next again.",
+    },
+    {
+      id: 'add-model',
+      title: 'Add the model asset',
+      explanation: 'src points to the prebuilt 3D asset the container should display.',
+      task: 'Replace the placeholder with a <Model> and set its src to the asset.',
+      anchors: ['placeholder', '<Model', 'src='],
+      validation: { type: 'contains', value: 'src=' },
+      hint: 'Use the asset the example already defines: replace the placeholder <div> with <Model src={TEAPOT} />.',
+      experiment: 'Try giving the <Model> a width and height and watch how the layout changes.',
+      completionMessage: 'The page now contains a 3D model container.',
+      notYet:
+        'Not quite yet — replace the placeholder with <Model src={TEAPOT} />, then try Next again.',
+    },
+    {
+      id: 'enable-xr',
+      title: 'Make the model spatial',
+      explanation:
+        'enable-xr lets the model render as spatial content when the WebSpatial Runtime is available.',
+      task: 'Add enable-xr to the <Model>.',
+      anchors: ['<Model', 'enable-xr', 'src='],
+      validation: { type: 'contains', value: 'enable-xr' },
+      hint: 'Add enable-xr directly on the component: <Model enable-xr src={TEAPOT} />.',
+      completionMessage: 'The model is now marked for spatial rendering.',
+      notYet: 'Not quite yet — add enable-xr to the <Model>, then try Next again.',
+    },
+    {
+      id: 'xr-depth',
+      title: 'Give the model local depth',
+      explanation:
+        'Width and height define the 2D layout region. --xr-depth gives the model room to exist in 3D.',
+      task: 'Add a style with width, height, and --xr-depth to the <Model>.',
+      anchors: ['<Model', 'style=', '--xr-depth', 'width:', 'height:'],
+      validation: { type: 'contains', value: '--xr-depth' },
+      hint: "Normal CSS size, then spatial depth: style={{ width: 320, height: 320, '--xr-depth': '160px' }}.",
+      experiment: 'Try a smaller and a larger --xr-depth value. Keep the model readable.',
+      completionMessage: 'You gave the model a 2D layout box and a 3D local space.',
+      notYet:
+        "Not quite yet — add a style with a size and '--xr-depth' to the <Model>, then try Next again.",
+    },
+    {
+      id: 'load-feedback',
+      title: 'Add load and error feedback',
+      explanation:
+        "Model assets can take time to load. Clear feedback helps the user understand what's happening.",
+      task: 'Add onLoad and onError handlers that update the status label.',
+      anchors: ['status', 'onLoad', 'onError', 'setStatus'],
+      validation: { type: 'contains', value: 'onError' },
+      hint: "Wire the events to the existing status state: onLoad={() => setStatus('Model loaded')} and onError={() => setStatus('Model failed to load')}.",
+      completionMessage: 'The model now gives useful loading feedback.',
+      notYet: 'Not quite yet — add onLoad and onError handlers to the <Model>, then try Next again.',
+    },
+  ],
+  wrapUp: {
+    title: 'What you built',
+    copy: 'You replaced a normal placeholder with a WebSpatial <Model>, loaded a prebuilt 3D asset, marked it for spatial rendering, gave it local depth, and added loading feedback.',
+    concepts: [
+      '<Model> is for static, prebuilt 3D model assets.',
+      'src points to the model file.',
+      'enable-xr marks the model for spatial rendering.',
+      'Width and height still control the 2D layout area.',
+      '--xr-depth gives the model local 3D space.',
+      'onLoad and onError help explain asset loading.',
+      'Use <Model> before <Reality> when you only need a prebuilt asset.',
+    ],
+  },
+  next: {
+    title: '3D Content Containers: <Reality>',
+    note: 'coming next',
+  },
+}
+
 /** Lessons in order — Learn Mode walks them as a chapter-based progression. */
-export const lessons: Lesson[] = [liftCardLesson, rotateCardLesson, materialCardLesson]
+export const lessons: Lesson[] = [
+  liftCardLesson,
+  rotateCardLesson,
+  materialCardLesson,
+  modelLesson,
+]
 
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
 export const upcomingLessons: LockedLesson[] = [
   { title: 'Natural Interactions', note: 'coming next' },
-  { title: '3D Content Containers: <Model>', note: 'locked' },
   { title: '3D Content Containers: <Reality>', note: 'locked' },
 ]
