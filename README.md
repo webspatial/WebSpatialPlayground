@@ -48,4 +48,3 @@ pnpm build:web  # flat 2D web
 - [WebSpatial Docs](https://webspatial.dev/docs)
 - [Full LLM-readable docs (`llms-full.txt`)](https://webspatial.dev/llms-full.txt)
 - [WebSpatial SDK on GitHub](https://github.com/webspatial/webspatial-sdk)
-- [SDK test-server examples](https://webspatial-sdk-test-server.vercel.app/#/)
