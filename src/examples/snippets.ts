@@ -24,6 +24,12 @@ export interface Snippet {
   docs: DocLink[]
   /** Full, editable component source (default export = the live preview). */
   code: string
+  /**
+   * Optional caption shown over the live stage. Used for `<Reality>` demos,
+   * whose engine-rendered 3D only appears inside a WebSpatial runtime — the
+   * note tells browser viewers the stage is intentionally empty.
+   */
+  previewNote?: string
 }
 
 const DOCS = 'https://webspatial.dev/docs/api/react-sdk'
@@ -289,6 +295,7 @@ const reality3d: Snippet = {
     { label: '<Reality>', url: DOCS + '/react-components/Reality' },
     { label: 'Entities & Materials', url: DOCS + '/react-components' },
   ],
+  previewNote: '3D container content renders inside a headset — the shape appears on Vision Pro / PICO',
   code: `import { useState } from 'react'
 import {
   Reality, SceneGraph, UnlitMaterial,
@@ -341,42 +348,59 @@ const animatedReality: Snippet = {
   id: 'reality-animated',
   title: 'Dynamic 3D Containers: Animation',
   blurb:
-    'A live scene graph driven by an animation loop. Each bar is a BoxEntity whose height and colour update every frame — the same React state that would drive a 2D chart drives real 3D geometry.',
+    'A live scene graph driven by an animation loop — a miniature solar system. Each frame updates only the planets’ position, so the SDK moves the entities with a cheap transform update and the geometry is built once, never rebuilt. (Animating an entity’s size/shape instead would force a full mesh rebuild every frame.) The orbit renders as real volumetric 3D inside a WebSpatial runtime.',
   docs: [
     { label: '<Reality>', url: DOCS + '/react-components/Reality' },
     { label: 'Entities & Materials', url: DOCS + '/react-components' },
   ],
+  previewNote: '3D container content renders inside a headset — the orbit animates on Vision Pro / PICO',
   code: `import { useEffect, useState } from 'react'
-import { Reality, SceneGraph, UnlitMaterial, BoxEntity } from '@webspatial/react-sdk'
+import { Reality, SceneGraph, UnlitMaterial, SphereEntity } from '@webspatial/react-sdk'
 
-const BARS = 10
+// A miniature solar system. The animation loop updates only each planet's
+// POSITION every frame: the SDK moves an entity with a cheap transform update,
+// so the sphere geometry is created once and never rebuilt. Animating the
+// geometry itself (radius/shape) would instead destroy + recreate the mesh
+// every frame — animate transforms, not geometry.
+const PLANETS = [
+  { id: 'mercury', orbit: 0.10, speed: 1.6, size: 0.018, hue: 35 },
+  { id: 'venus', orbit: 0.15, speed: 1.1, size: 0.026, hue: 200 },
+  { id: 'earth', orbit: 0.21, speed: 0.8, size: 0.030, hue: 280 },
+]
 
-export default function Equalizer() {
+// Center of the volume, pushed toward the viewer so the orbit has depth.
+const CENTER_Z = 0.22
+
+export default function SolarSystem() {
   const [t, setT] = useState(0)
   useEffect(() => {
     let raf = 0
-    const tick = () => { setT((v) => v + 0.06); raf = requestAnimationFrame(tick) }
+    const tick = () => { setT((v) => v + 0.016); raf = requestAnimationFrame(tick) }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  const bars = Array.from({ length: BARS }, (_, i) => {
-    const h = 0.05 + 0.14 * (0.5 + 0.5 * Math.sin(t + i * 0.6))
-    return { i, h, x: (i - (BARS - 1) / 2) * 0.06 }
-  })
-
   return (
     <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
       <Reality style={{ width: 380, height: 320 }}>
-        {bars.map((b) => (
-          <UnlitMaterial key={'m' + b.i} id={'m' + b.i}
-            color={'hsl(' + (260 + b.i * 10) + ', 80%, 65%)'} />
+        <UnlitMaterial id="sun" color="#fbbf24" />
+        {PLANETS.map((p) => (
+          <UnlitMaterial key={p.id} id={p.id}
+            color={'hsl(' + p.hue + ', 80%, 65%)'} />
         ))}
         <SceneGraph>
-          {bars.map((b) => (
-            <BoxEntity key={b.i} materials={['m' + b.i]}
-              width={0.04} height={b.h} depth={0.04}
-              position={{ x: b.x, y: 0, z: 0.2 }} />
+          {/* The star, fixed at the center of the volume. */}
+          <SphereEntity materials={['sun']} radius={0.05}
+            position={{ x: 0, y: 0, z: CENTER_Z }} />
+          {/* Planets orbit in the horizontal x/z plane — they swing through
+              real depth, passing in front of and behind the star. */}
+          {PLANETS.map((p) => (
+            <SphereEntity key={p.id} materials={[p.id]} radius={p.size}
+              position={{
+                x: Math.cos(t * p.speed) * p.orbit,
+                y: 0,
+                z: CENTER_Z + Math.sin(t * p.speed) * p.orbit,
+              }} />
           ))}
         </SceneGraph>
       </Reality>
