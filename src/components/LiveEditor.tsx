@@ -1,4 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-jsx'
 import 'prismjs/components/prism-tsx'
@@ -109,16 +110,25 @@ export function LiveEditor({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#0a0a12]">
-      {/* Step spotlight: soft bands behind the text marking the current lines. */}
+      {/* Step spotlight: soft bands behind the text marking the current lines.
+          Each band slides in from the gutter and then breathes gently (see the
+          `lesson-anchor-band` keyframes), so the eye is drawn straight to where
+          the step wants an edit — without ever pulling focus from the code. */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div ref={bandsRef} className="absolute inset-x-0 top-0">
-          {bandLines.map((line) => (
-            <div
-              key={line}
-              className="absolute inset-x-0 border-l-2 border-violet-400/70 bg-violet-400/10"
-              style={{ top: PAD + line * LINE_PX, height: LINE_PX }}
-            />
-          ))}
+          <AnimatePresence>
+            {bandLines.map((line, i) => (
+              <motion.div
+                key={line}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: i * 0.06 }}
+                className="lesson-anchor-band absolute inset-x-0 border-l-2 border-violet-400/70"
+                style={{ top: PAD + line * LINE_PX, height: LINE_PX }}
+              />
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 

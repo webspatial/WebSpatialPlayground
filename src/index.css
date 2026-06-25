@@ -127,6 +127,33 @@ pre[class*="language-"] {
   animation: shimmer 3s linear infinite;
 }
 
+/* Learn Mode editor spotlight: a gentle breathing glow on the line(s) the
+   current step wants edited. Slow and low-contrast on purpose — it marks "add
+   here" in the corner of your eye and never competes with the code. */
+@keyframes anchorBreath {
+  0%, 100% {
+    background-color: rgba(167, 139, 250, 0.08);
+    box-shadow: inset 2px 0 0 rgba(167, 139, 250, 0);
+  }
+  50% {
+    background-color: rgba(167, 139, 250, 0.16);
+    box-shadow: inset 2px 0 0 rgba(167, 139, 250, 0.35);
+  }
+}
+
+.lesson-anchor-band {
+  background-color: rgba(167, 139, 250, 0.1);
+  animation: anchorBreath 3s ease-in-out infinite;
+}
+
+/* Respect reduced-motion: keep the marker, drop the breathing. */
+@media (prefers-reduced-motion: reduce) {
+  .lesson-anchor-band {
+    animation: none;
+    background-color: rgba(167, 139, 250, 0.12);
+  }
+}
+
 /* ─── Live editor (react-live) ─────────────────────────────────────── */
 .live-editor {
   font-family: 'JetBrains Mono', monospace !important;

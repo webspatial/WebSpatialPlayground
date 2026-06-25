@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { AnimatePresence, MotionConfig } from 'framer-motion'
 import { FileCode2, Play, Copy, Check } from 'lucide-react'
 import { LiveEditor } from '../LiveEditor'
 import { LivePreview } from '../LivePreview'
@@ -138,6 +139,7 @@ export function TutorialShell({
     : 'Next'
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
       {/* ─── Left: live code editor ─── */}
       <section className="flex min-h-0 flex-col border-b border-white/5 lg:w-[46%] lg:border-b-0 lg:border-r">
@@ -182,35 +184,44 @@ export function TutorialShell({
           />
         </div>
 
-        {/* Guided tutorial card */}
+        {/* Guided tutorial card. Phases (and steps within a phase) swap through
+            a single AnimatePresence so each crossfades into the next instead of
+            snapping — the spine of the whole flow's continuity. */}
         <div className="max-h-[52%] shrink-0 overflow-auto border-t border-white/5 bg-[#0c0c14] px-5 py-4">
-          {phase === 'intro' && <LessonIntro lesson={lesson} onStart={startLesson} />}
-          {phase === 'steps' && step && (
-            <StepCard
-              lesson={lesson}
-              step={step}
-              index={stepIndex}
-              total={total}
-              hintOpen={hintOpen}
-              onToggleHint={() => setHintOpen((v) => !v)}
-              notYet={notYet}
-              completed={completed}
-              nextLabel={nextLabel}
-              onReset={resetStep}
-              onNext={onNext}
-            />
-          )}
-          {phase === 'wrap' && (
-            <WrapUp
-              lesson={lesson}
-              onCopyFinal={copyFinal}
-              onResetLesson={resetLesson}
-              onOpenPlayground={onOpenPlayground}
-              onNextLesson={onNextLesson}
-            />
-          )}
+          <AnimatePresence mode="wait" initial={false}>
+            {phase === 'intro' && (
+              <LessonIntro key="intro" lesson={lesson} onStart={startLesson} />
+            )}
+            {phase === 'steps' && step && (
+              <StepCard
+                key={`step-${stepIndex}`}
+                lesson={lesson}
+                step={step}
+                index={stepIndex}
+                total={total}
+                hintOpen={hintOpen}
+                onToggleHint={() => setHintOpen((v) => !v)}
+                notYet={notYet}
+                completed={completed}
+                nextLabel={nextLabel}
+                onReset={resetStep}
+                onNext={onNext}
+              />
+            )}
+            {phase === 'wrap' && (
+              <WrapUp
+                key="wrap"
+                lesson={lesson}
+                onCopyFinal={copyFinal}
+                onResetLesson={resetLesson}
+                onOpenPlayground={onOpenPlayground}
+                onNextLesson={onNextLesson}
+              />
+            )}
+          </AnimatePresence>
         </div>
       </section>
     </div>
+    </MotionConfig>
   )
 }
