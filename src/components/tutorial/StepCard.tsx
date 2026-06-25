@@ -114,9 +114,10 @@ export function StepCard({
         </AnimatePresence>
       )}
 
-      {/* Gentle not-yet copy — appears after a failed Next, eases out when fixed. */}
+      {/* Gentle not-yet copy — appears after a failed Next, eases out when fixed,
+          and never lingers once the step is already satisfied. */}
       <AnimatePresence initial={false}>
-        {notYet && (
+        {notYet && !completed && (
           <motion.div
             key="not-yet"
             variants={disclosure}

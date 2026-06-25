@@ -75,6 +75,13 @@ export function TutorialShell({
       ? '--xr-back is active — flat here, lifted in the WebSpatial Runtime'
       : undefined
 
+  // Any edit is a fresh attempt: dismiss the previous "not quite yet" nudge so a
+  // stale message can't sit next to a now-valid preview and completion note.
+  const onEditCode = (next: string) => {
+    setCode(next)
+    if (notYet) setNotYet(null)
+  }
+
   const enterStep = (i: number) => {
     setStepIndex(i)
     setStepStartCode(code)
@@ -160,7 +167,7 @@ export function TutorialShell({
           </button>
         </div>
         <div className="min-h-0 flex-1">
-          <LiveEditor value={code} onChange={setCode} language="tsx" highlightAnchors={anchors} />
+          <LiveEditor value={code} onChange={onEditCode} language="tsx" highlightAnchors={anchors} />
         </div>
       </section>
 
