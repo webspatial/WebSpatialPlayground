@@ -17,7 +17,14 @@ This is **not** an `innerHTML` preview. Editor source is compiled the same way a
 
 Because the snippet runs through the SDK's real JSX runtime, an `enable-xr` marker or a `--xr-*` CSS property produces a **genuinely spatialized element** — true depth, materials and gestures on Apple Vision Pro / PICO OS 6, and an honest flat fallback in an ordinary browser. See [`src/lib/compile.ts`](src/lib/compile.ts).
 
-## Examples
+## Two modes
+
+A top-level switch in the header chooses how you explore:
+
+- **Learn Mode** *(default)* — a calm, guided tutorial inspired by Apple's Develop in Swift tutorials. The first chapter, **Spatialized HTML Elements**, walks a first-time user through lifting a normal React card into space in five short steps: `enable-xr` → [`--xr-back`](https://webspatial.dev/docs/api/react-sdk/css-api/back) → [`--xr-background-material`](https://webspatial.dev/docs/api/react-sdk/css-api/background-material) → live state-driven depth. The code, the live preview and the current step stay on screen together. Lessons are data-driven ([`src/tutorial/lesson.ts`](src/tutorial/lesson.ts)) so future chapters reuse the same shell.
+- **Playground Mode** — the open workbench with every example at once, for users who already know their way around.
+
+## Examples (Playground Mode)
 
 Each example is a full, editable component. Switch with the chips along the top:
 
