@@ -1,11 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, MotionConfig } from 'framer-motion'
 import { FileCode2, Play, Copy, Check } from 'lucide-react'
-import { LiveEditor } from '../LiveEditor'
+import { LiveEditor, type FreshRange } from '../LiveEditor'
 import { LivePreview } from '../LivePreview'
 import { RuntimeBadge } from '../RuntimeBanner'
 import { detectRuntime } from '@/lib/runtime'
-import type { Lesson, TutorialStep } from '@/tutorial/lesson'
+import { resolveAutoType, type Lesson, type TutorialStep } from '@/tutorial/lesson'
 import { LessonIntro } from './LessonIntro'
 import { StepCard } from './StepCard'
 import { WrapUp } from './WrapUp'
@@ -52,6 +52,12 @@ export function TutorialShell({
   // Whether the current editor source compiles + renders. Gates Next so the
   // user can't advance past code that doesn't run yet.
   const [previewValid, setPreviewValid] = useState(true)
+  // "Do it for me" auto-typer: whether it's running, the range it's lighting up,
+  // and where to keep the caret so the new code stays in view.
+  const [autoTyping, setAutoTyping] = useState(false)
+  const [freshRange, setFreshRange] = useState<FreshRange | null>(null)
+  const [caretPos, setCaretPos] = useState<number | null>(null)
+  const typeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const step = lesson.steps[stepIndex]
   const total = lesson.steps.length
@@ -82,7 +88,63 @@ export function TutorialShell({
     if (notYet) setNotYet(null)
   }
 
+  // Stop any in-flight "do it for me" run and clear its transient UI.
+  const cancelTyping = () => {
+    if (typeTimer.current != null) {
+      clearTimeout(typeTimer.current)
+      typeTimer.current = null
+    }
+    setAutoTyping(false)
+    setCaretPos(null)
+    setFreshRange(null)
+  }
+
+  // Tidy up the timer if the shell unmounts mid-type.
+  useEffect(() => () => cancelTyping(), [])
+
+  /**
+   * "Do it for me": type this step's edit into the editor for the user, one
+   * character at a time, lighting up the new text as it lands. The step's own
+   * validation then trips automatically once the full insertion is in.
+   */
+  const doItForMe = () => {
+    if (!step?.autoType || autoTyping) return
+    const target = resolveAutoType(code, step.autoType)
+    if (!target) return
+
+    setNotYet(null)
+    setHintOpen(false)
+    setAutoTyping(true)
+    const base = code
+    const { at, text } = target
+
+    let i = 0
+    const tick = () => {
+      i += 1
+      setCode(base.slice(0, at) + text.slice(0, i) + base.slice(at))
+      setFreshRange({ start: at, end: at + i })
+      setCaretPos(at + i)
+      if (i < text.length) {
+        // A touch of cadence: linger after line breaks and commas.
+        const justTyped = text[i - 1]
+        const delay = justTyped === '\n' ? 150 : justTyped === ',' ? 110 : 24
+        typeTimer.current = setTimeout(tick, delay)
+      } else {
+        setAutoTyping(false)
+        setCaretPos(null)
+        // Let the finished insertion glow a moment, then release the spotlight.
+        typeTimer.current = setTimeout(() => {
+          setFreshRange(null)
+          typeTimer.current = null
+        }, 1700)
+      }
+    }
+    // A short wind-up so the eye catches where typing is about to begin.
+    typeTimer.current = setTimeout(tick, 280)
+  }
+
   const enterStep = (i: number) => {
+    cancelTyping()
     setStepIndex(i)
     setStepStartCode(code)
     setHintOpen(false)
@@ -97,6 +159,7 @@ export function TutorialShell({
 
   const onNext = () => {
     if (!step) return
+    cancelTyping()
     // Never advance past code that doesn't compile — point at the editor instead.
     if (!previewValid) {
       setNotYet('The preview is waiting for valid code. Fix the highlighted issue, then continue.')
@@ -115,6 +178,7 @@ export function TutorialShell({
   }
 
   const resetStep = () => {
+    cancelTyping()
     setCode(stepStartCode)
     setHintOpen(false)
     setNotYet(null)
@@ -122,6 +186,7 @@ export function TutorialShell({
   }
 
   const resetLesson = () => {
+    cancelTyping()
     setCode(lesson.starterCode)
     setStepStartCode(lesson.starterCode)
     setPhase('intro')
@@ -167,7 +232,15 @@ export function TutorialShell({
           </button>
         </div>
         <div className="min-h-0 flex-1">
-          <LiveEditor value={code} onChange={onEditCode} language="tsx" highlightAnchors={anchors} />
+          <LiveEditor
+            value={code}
+            onChange={onEditCode}
+            language="tsx"
+            highlightAnchors={anchors}
+            freshRange={freshRange}
+            caretPos={caretPos}
+            readOnly={autoTyping}
+          />
         </div>
       </section>
 
@@ -208,6 +281,8 @@ export function TutorialShell({
                 total={total}
                 hintOpen={hintOpen}
                 onToggleHint={() => setHintOpen((v) => !v)}
+                onDoItForMe={doItForMe}
+                autoTyping={autoTyping}
                 notYet={notYet}
                 completed={completed}
                 nextLabel={nextLabel}

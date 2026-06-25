@@ -9,13 +9,14 @@ import {
 } from 'lucide-react'
 
 /**
- * Playground Mode: the open, every-example-at-once workbench for advanced users.
- * This is the original playground — a row of example chips over the live editor
- * and live WebSpatial preview — kept intact alongside the guided Learn Mode.
+ * Playground Mode: the open workbench for tinkering with a concept's example.
+ * Which example is shown is chosen from the shared chapter rail (`activeId`), so
+ * the playground stays in sync with Learn Mode — the live editor and live
+ * WebSpatial preview otherwise work exactly as before.
  */
-export function PlaygroundShell() {
-  const [activeId, setActiveId] = useState(snippets[0].id)
-  // Per-snippet editable source, seeded lazily from the snippet defaults.
+export function PlaygroundShell({ activeId }: { activeId: string }) {
+  // Per-snippet editable source, seeded lazily from the snippet defaults. Kept
+  // keyed by id so edits survive switching chapters and coming back.
   const [edited, setEdited] = useState<Record<string, string>>({})
   const [copied, setCopied] = useState(false)
 
@@ -45,24 +46,6 @@ export function PlaygroundShell() {
 
   return (
     <>
-      {/* ─── Example chips ─── */}
-      <div className="flex shrink-0 items-center gap-2 overflow-x-auto border-b border-white/5 bg-[#0b0b13] px-5 py-2.5">
-        <Sparkles size={13} className="shrink-0 text-violet-400/70" />
-        {snippets.map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setActiveId(s.id)}
-            className={`shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-all ${
-              s.id === activeId
-                ? 'border border-violet-500/30 bg-violet-500/15 text-violet-200'
-                : 'border border-transparent text-white/45 hover:bg-white/5 hover:text-white/70'
-            }`}
-          >
-            {s.title}
-          </button>
-        ))}
-      </div>
-
       {/* ─── Split: editor | preview ─── */}
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         {/* Editor */}
