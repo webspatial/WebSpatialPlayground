@@ -1,29 +1,26 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles, ArrowRight, RotateCcw, Lightbulb, Wand2, Target, Headphones } from 'lucide-react'
+import { Sparkles, ArrowRight, RotateCcw, Wand2, Target, Headphones } from 'lucide-react'
 import type { Lesson, TutorialStep } from '@/tutorial/lesson'
 import { StepProgress } from './StepProgress'
-import { HintPanel } from './HintPanel'
 import { CompletionMessage } from './CompletionMessage'
 import { phaseContainer, riseItem, disclosure, pressable, EASE_OUT } from './motion'
 
 /**
  * One tutorial step, Apple-style: chapter label, lesson title, a step counter,
  * a short explanation, one concrete task, an optional experiment, and the small
- * set of actions — Show hint, Reset step, Next. Only one job is on screen at a
- * time; everything else stays quiet.
+ * set of actions — Do it for me, Reset step, Next. Only one job is on screen at
+ * a time; everything else stays quiet.
  *
  * Motion gives the step a sense of place: the card's blocks settle in on a
  * gentle stagger when the step opens (it's keyed per-step in the parent's
  * AnimatePresence, so step-to-step crossfades), and the conditional pieces —
- * hint, "not yet", completion — grow open and collapse rather than snapping.
+ * "not yet", completion — grow open and collapse rather than snapping.
  */
 export function StepCard({
   lesson,
   step,
   index,
   total,
-  hintOpen,
-  onToggleHint,
   onDoItForMe,
   autoTyping,
   notYet,
@@ -37,10 +34,8 @@ export function StepCard({
   step: TutorialStep
   index: number
   total: number
-  /** Whether the hint is currently revealed. */
-  hintOpen: boolean
-  onToggleHint: () => void
-  /** Start the "do it for me" auto-typer for this step. */
+  /** Do this step's work for the user — type the edit in, or carry an
+      observation step forward. */
   onDoItForMe: () => void
   /** Whether the auto-typer is currently typing into the editor. */
   autoTyping: boolean
@@ -117,24 +112,6 @@ export function StepCard({
         </motion.div>
       )}
 
-      {/* Hint (revealed on request) — grows open and collapses away. */}
-      {step.hint && (
-        <AnimatePresence initial={false}>
-          {hintOpen && (
-            <motion.div
-              key="hint"
-              variants={disclosure}
-              initial="hidden"
-              animate="show"
-              exit="exit"
-              className="overflow-hidden"
-            >
-              <HintPanel hint={step.hint} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      )}
-
       {/* Gentle not-yet copy — appears after a failed Next, eases out when fixed,
           and never lingers once the step is already satisfied. */}
       <AnimatePresence initial={false}>
@@ -163,32 +140,19 @@ export function StepCard({
 
       {/* Actions */}
       <motion.div variants={riseItem} className="mt-0.5 flex items-center gap-2">
-        {/* "Do it for me" replaces the hint whenever the step has a concrete edit
-            to make — click it and the change is typed in for you. Steps with
-            nothing to type (read-only / slider) keep the classic hint instead. */}
-        {step.autoType ? (
-          !completed && (
-            <motion.button
-              {...pressable}
-              onClick={onDoItForMe}
-              disabled={autoTyping}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1.5 text-[12px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
-            >
-              <Wand2 size={12} className={autoTyping ? 'animate-pulse' : undefined} />
-              {autoTyping ? 'Typing…' : 'Do it for me'}
-            </motion.button>
-          )
-        ) : (
-          step.hint && (
-            <motion.button
-              {...pressable}
-              onClick={onToggleHint}
-              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] text-white/45 transition-colors hover:bg-white/5 hover:text-white/75"
-            >
-              <Lightbulb size={12} />
-              {hintOpen ? 'Hide hint' : 'Show hint'}
-            </motion.button>
-          )
+        {/* "Do it for me" — on every step. Steps with a concrete edit have it
+            typed in for you; observation / slider steps are simply carried
+            forward. Either way the user never has to type to make progress. */}
+        {!completed && (
+          <motion.button
+            {...pressable}
+            onClick={onDoItForMe}
+            disabled={autoTyping}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1.5 text-[12px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+          >
+            <Wand2 size={12} className={autoTyping ? 'animate-pulse' : undefined} />
+            {autoTyping ? 'Typing…' : 'Do it for me'}
+          </motion.button>
         )}
         <motion.button
           {...pressable}
