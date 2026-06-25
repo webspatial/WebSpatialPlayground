@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, MotionConfig } from 'framer-motion'
-import { FileCode2, Play, Copy, Check } from 'lucide-react'
+import { FileCode2, Play, Copy, Check, ChevronLeft } from 'lucide-react'
 import { LiveEditor, type FreshRange } from '../LiveEditor'
 import { LivePreview } from '../LivePreview'
 import { RuntimeBadge } from '../RuntimeBanner'
@@ -36,11 +36,17 @@ export function TutorialShell({
   lesson,
   onOpenPlayground,
   onNextLesson,
+  chapterNav,
 }: {
   lesson: Lesson
   onOpenPlayground: () => void
   /** Advance to the next lesson, when one exists in the progression. */
   onNextLesson?: () => void
+  /**
+   * When this lesson is part of a multi-lesson chapter, a small breadcrumb is
+   * shown above the card: which lesson this is, and a way back to the overview.
+   */
+  chapterNav?: { index: number; total: number; onOverview: () => void }
 }) {
   const [phase, setPhase] = useState<Phase>('intro')
   const [stepIndex, setStepIndex] = useState(0)
@@ -80,11 +86,13 @@ export function TutorialShell({
   // model-specific reassurance, otherwise the --xr-back depth note. Keyed on the
   // code's own content, so it's correct for whichever lesson is loaded.
   const annotation = !rt.isSpatial
-    ? code.includes('<Model') || code.includes('--xr-depth')
-      ? 'The model container is set up — full spatial rendering needs a supported WebSpatial Runtime.'
-      : code.includes('--xr-back')
-        ? '--xr-back is active — flat here, lifted in the WebSpatial Runtime'
-        : undefined
+    ? code.includes('<Reality')
+      ? 'The 3D scene renders inside a WebSpatial Runtime — here you see the 2D container and your code.'
+      : code.includes('<Model') || code.includes('--xr-depth')
+        ? 'The model container is set up — full spatial rendering needs a supported WebSpatial Runtime.'
+        : code.includes('--xr-back')
+          ? '--xr-back is active — flat here, lifted in the WebSpatial Runtime'
+          : undefined
     : undefined
 
   // Any edit is a fresh attempt: dismiss the previous "not quite yet" nudge so a
@@ -280,6 +288,20 @@ export function TutorialShell({
             a single AnimatePresence so each crossfades into the next instead of
             snapping — the spine of the whole flow's continuity. */}
         <div className="max-h-[52%] shrink-0 overflow-auto border-t border-white/5 bg-[#0c0c14] px-5 py-4">
+          {chapterNav && (
+            <div className="mb-3 flex items-center justify-between gap-3 border-b border-white/5 pb-2.5">
+              <button
+                onClick={chapterNav.onOverview}
+                className="inline-flex items-center gap-1 text-[11px] text-white/40 transition-colors hover:text-white/70"
+              >
+                <ChevronLeft size={12} />
+                Chapter overview
+              </button>
+              <span className="text-[10.5px] font-medium uppercase tracking-wide text-white/35">
+                Lesson {chapterNav.index + 1} of {chapterNav.total}
+              </span>
+            </div>
+          )}
           <AnimatePresence mode="wait" initial={false}>
             {phase === 'intro' && (
               <LessonIntro key="intro" lesson={lesson} onStart={startLesson} />

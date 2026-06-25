@@ -9,7 +9,8 @@
  * what lets the user pick a concept once and switch between learning it and
  * tinkering with it without losing their place.
  */
-import { lessons, type Lesson } from './lesson'
+import { lessons, type Lesson, type LessonChapter } from './lesson'
+import { realityChapter } from './realityChapter'
 import { snippets, type Snippet } from '@/examples/snippets'
 
 export interface Chapter {
@@ -19,20 +20,35 @@ export interface Chapter {
   title: string
   /** The guided lesson for this concept, when one exists. */
   lesson?: Lesson
+  /**
+   * A multi-lesson chapter for this concept, when the concept is too big for a
+   * single lesson (e.g. `<Reality>`). Mutually exclusive with `lesson`.
+   */
+  lessonChapter?: LessonChapter
   /** The open playground example for this concept. */
   snippet: Snippet
 }
 
+/** Multi-lesson chapters, keyed by the concept id they teach. */
+const lessonChapters: LessonChapter[] = [realityChapter]
+
 /**
  * Concept-ordered chapters. The snippet order is the teaching progression, so we
- * walk it and attach the lesson that teaches the same concept (matched by name).
+ * walk it and attach the guided lesson — single-lesson or multi-lesson — that
+ * teaches the same concept (matched by name / id).
  */
 export const chapters: Chapter[] = snippets.map((snippet) => ({
   id: snippet.id,
   title: snippet.title,
   snippet,
   lesson: lessons.find((l) => l.chapter === snippet.title),
+  lessonChapter: lessonChapters.find((c) => c.id === snippet.id),
 }))
+
+/** Does this chapter offer something to learn, either form? */
+export function chapterCanLearn(c: Chapter): boolean {
+  return !!c.lesson || !!c.lessonChapter
+}
 
 /** Look up a chapter by id, falling back to the first chapter. */
 export function chapterById(id: string): Chapter {
@@ -50,5 +66,5 @@ export function chapterById(id: string): Chapter {
 export function nextLessonChapter(id: string): Chapter | undefined {
   const idx = chapters.findIndex((c) => c.id === id)
   const next = chapters[idx + 1]
-  return next?.lesson ? next : undefined
+  return next && chapterCanLearn(next) ? next : undefined
 }
