@@ -154,6 +154,15 @@ pre[class*="language-"] {
   }
 }
 
+/* "Do it for me": the highlight that rides along with text being typed in for
+   the user, then settles on the finished insertion. A brighter emerald than the
+   anchor band so the eye reads it as "this is the new code you needed". */
+.lesson-fresh-type {
+  background-color: rgba(52, 211, 153, 0.22);
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.35), 0 0 14px rgba(16, 185, 129, 0.25);
+}
+
 /* ─── Live editor (react-live) ─────────────────────────────────────── */
 .live-editor {
   font-family: 'JetBrains Mono', monospace !important;

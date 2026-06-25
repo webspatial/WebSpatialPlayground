@@ -24,6 +24,8 @@ export function StepCard({
   total,
   hintOpen,
   onToggleHint,
+  onDoItForMe,
+  autoTyping,
   notYet,
   completed,
   nextLabel,
@@ -37,6 +39,10 @@ export function StepCard({
   /** Whether the hint is currently revealed. */
   hintOpen: boolean
   onToggleHint: () => void
+  /** Start the "do it for me" auto-typer for this step. */
+  onDoItForMe: () => void
+  /** Whether the auto-typer is currently typing into the editor. */
+  autoTyping: boolean
   /** Gentle "not quite yet" copy to show after a failed Next, if any. */
   notYet: string | null
   /** Whether this step's task has been satisfied (shows completion message). */
@@ -142,15 +148,32 @@ export function StepCard({
 
       {/* Actions */}
       <motion.div variants={riseItem} className="mt-0.5 flex items-center gap-2">
-        {step.hint && (
-          <motion.button
-            {...pressable}
-            onClick={onToggleHint}
-            className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] text-white/45 transition-colors hover:bg-white/5 hover:text-white/75"
-          >
-            <Lightbulb size={12} />
-            {hintOpen ? 'Hide hint' : 'Show hint'}
-          </motion.button>
+        {/* "Do it for me" replaces the hint whenever the step has a concrete edit
+            to make — click it and the change is typed in for you. Steps with
+            nothing to type (read-only / slider) keep the classic hint instead. */}
+        {step.autoType ? (
+          !completed && (
+            <motion.button
+              {...pressable}
+              onClick={onDoItForMe}
+              disabled={autoTyping}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/15 px-2.5 py-1.5 text-[12px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/25 disabled:opacity-60"
+            >
+              <Wand2 size={12} className={autoTyping ? 'animate-pulse' : undefined} />
+              {autoTyping ? 'Typing…' : 'Do it for me'}
+            </motion.button>
+          )
+        ) : (
+          step.hint && (
+            <motion.button
+              {...pressable}
+              onClick={onToggleHint}
+              className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] text-white/45 transition-colors hover:bg-white/5 hover:text-white/75"
+            >
+              <Lightbulb size={12} />
+              {hintOpen ? 'Hide hint' : 'Show hint'}
+            </motion.button>
+          )
         )}
         <motion.button
           {...pressable}

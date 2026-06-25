@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Prism from 'prismjs'
 import 'prismjs/components/prism-jsx'
@@ -21,21 +21,46 @@ const PAD = 16
  * Learn Mode adds a third layer beneath the text: soft bands that spotlight the
  * exact lines a tutorial step is teaching (`highlightAnchors`).
  */
+/** A contiguous character range in `value`, used to spotlight just-typed text. */
+export interface FreshRange {
+  start: number
+  end: number
+}
+
 export function LiveEditor({
   value,
   onChange,
   language = 'tsx',
   highlightAnchors,
+  freshRange,
+  caretPos,
+  readOnly = false,
 }: {
   value: string
   onChange: (next: string) => void
   language?: string
   /** Substrings; every line containing one is highlighted for the current step. */
   highlightAnchors?: string[]
+  /**
+   * Character range to spotlight as "just entered" — driven by the "do it for
+   * me" auto-typer so the new code lights up as it lands.
+   */
+  freshRange?: FreshRange | null
+  /**
+   * When set, the caret is moved here imperatively (and the textarea focused),
+   * so auto-typed text scrolls into view as if a person were typing it.
+   */
+  caretPos?: number | null
+  /** Disable manual editing — used while the auto-typer is driving the editor. */
+  readOnly?: boolean
 }) {
   const taRef = useRef<HTMLTextAreaElement>(null)
   const preRef = useRef<HTMLPreElement>(null)
   const bandsRef = useRef<HTMLDivElement>(null)
+  const measureRef = useRef<HTMLSpanElement>(null)
+  // Monospace cell width, measured once so fresh-text rectangles line up exactly
+  // with the glyphs. Seeded with a sane approximation for the first paint.
+  const [charW, setCharW] = useState(FONT_SIZE * 0.6)
 
   const highlighted = useMemo(() => {
     const grammar = Prism.languages[language] ?? Prism.languages.tsx
@@ -83,6 +108,56 @@ export function LiveEditor({
     }
   }, [bandLines])
 
+  // Measure the monospace cell width once the font is in place.
+  useLayoutEffect(() => {
+    if (measureRef.current) {
+      const w = measureRef.current.getBoundingClientRect().width / 10
+      if (w > 0) setCharW(w)
+    }
+  }, [])
+
+  // Drive the caret (and thus the textarea's own scroll) when the auto-typer
+  // advances, so freshly typed code is always kept on screen.
+  useLayoutEffect(() => {
+    if (caretPos == null) return
+    const ta = taRef.current
+    if (!ta) return
+    ta.focus({ preventScroll: true })
+    ta.setSelectionRange(caretPos, caretPos)
+    // The textarea scrolls to the caret on selection; mirror it to the layers.
+    if (preRef.current) {
+      preRef.current.scrollTop = ta.scrollTop
+      preRef.current.scrollLeft = ta.scrollLeft
+    }
+    if (bandsRef.current) {
+      bandsRef.current.style.transform = `translateY(${-ta.scrollTop}px)`
+    }
+  }, [caretPos, value])
+
+  // Break the fresh range into per-line rectangles (line, start col, end col).
+  const freshRects = useMemo(() => {
+    if (!freshRange || freshRange.end <= freshRange.start) return []
+    const { start, end } = freshRange
+    const lineStart = value.lastIndexOf('\n', start - 1) + 1
+    let line = 0
+    for (let i = 0; i < start; i++) if (value[i] === '\n') line++
+    const rects: { line: number; colStart: number; width: number }[] = []
+    let i = start
+    let colStart = start - lineStart
+    while (i < end) {
+      const nl = value.indexOf('\n', i)
+      if (nl === -1 || nl >= end) {
+        rects.push({ line, colStart, width: end - i })
+        break
+      }
+      rects.push({ line, colStart, width: nl - i })
+      i = nl + 1
+      line += 1
+      colStart = 0
+    }
+    return rects
+  }, [freshRange, value])
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const ta = e.currentTarget
     if (e.key === 'Tab') {
@@ -129,6 +204,27 @@ export function LiveEditor({
               />
             ))}
           </AnimatePresence>
+
+          {/* "Do it for me" spotlight: emerald rectangles tracking the exact
+              characters being typed in, so the new code reads as new. */}
+          <AnimatePresence>
+            {freshRects.map((r, i) => (
+              <motion.div
+                key={`fresh-${r.line}-${r.colStart}-${i}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                className="lesson-fresh-type absolute"
+                style={{
+                  top: PAD + r.line * LINE_PX,
+                  left: PAD + r.colStart * charW,
+                  width: Math.max(r.width * charW, 2),
+                  height: LINE_PX,
+                }}
+              />
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -147,12 +243,23 @@ export function LiveEditor({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
+        readOnly={readOnly}
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
         className="absolute inset-0 resize-none overflow-auto bg-transparent text-transparent caret-violet-300 outline-none"
         style={{ ...shared, WebkitTextFillColor: 'transparent' }}
       />
+
+      {/* Off-screen probe for the monospace cell width (10 chars / 10). */}
+      <span
+        ref={measureRef}
+        aria-hidden
+        className="pointer-events-none absolute -z-10 opacity-0"
+        style={{ ...shared, padding: 0, top: -9999, left: -9999 }}
+      >
+        0000000000
+      </span>
     </div>
   )
 }
