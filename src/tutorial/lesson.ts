@@ -12,6 +12,8 @@
 export type Validation =
   | { type: 'manual' }
   | { type: 'contains'; value: string }
+  /** Satisfied only when the code contains *every* listed substring. */
+  | { type: 'containsAll'; values: string[] }
   | { type: 'sliderChanged' }
 
 /**
@@ -67,6 +69,11 @@ export interface TutorialStep {
   anchors?: string[]
   validation: Validation
   hint?: string
+  /**
+   * Optional honest note for gestures the desktop preview can't trigger. Shown
+   * only outside a spatial runtime, so the lesson never blocks on a headset.
+   */
+  fallbackNote?: string
   /**
    * Optional "do it for me" edit. When present, the step offers to type the
    * change into the editor for the user instead of only hinting at it.
@@ -575,6 +582,11 @@ export const materialCardLesson: Lesson = {
       task: "Add '--xr-background-material': 'translucent' to the card style.",
       anchors: ['--xr-back', '--xr-background-material'],
       validation: { type: 'contains', value: '--xr-background-material' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: "'--xr-back'",
+        text: "          '--xr-background-material': 'translucent',",
+      },
       hint: "Place '--xr-background-material' next to '--xr-back'.",
       experiment: 'Try turning the property off and on to compare the difference.',
       completionMessage: 'The card now has a material backplate.',
@@ -601,6 +613,11 @@ export const materialCardLesson: Lesson = {
       task: "Raise borderRadius and add a subtle border, e.g. border: '1px solid rgba(139, 92, 246, 0.45)'.",
       anchors: ['borderRadius', 'border:'],
       validation: { type: 'contains', value: 'border:' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'background:',
+        text: "          border: '1px solid rgba(139, 92, 246, 0.45)',",
+      },
       hint: 'Use a soft border, not a heavy outline.',
       experiment: 'Try a smaller radius, then a larger one, and compare how the panel feels.',
       completionMessage: 'The material now has a clear shape.',
@@ -638,12 +655,256 @@ export const materialCardLesson: Lesson = {
   },
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Chapter: Natural Interactions · Lesson 4                                */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Stories 1–3 made a floating card visible and readable in space. Story 4 makes
+ * that same card feel touchable. This is the old "Spatial gestures" demo,
+ * reframed as a guided lesson: the user starts from a spatial card with a status
+ * label, keeps normal web click working, then layers on spatial tap, drag, and
+ * finally rotate + magnify — one gesture family per step, feedback first.
+ *
+ * Event names and payload fields are taken verbatim from the WebSpatial SDK and
+ * the existing demo: onSpatialTap, onSpatialDrag(e.translationX/Y),
+ * onSpatialRotate, onSpatialMagnify(e.magnification). Nothing is invented. This
+ * lesson teaches interaction only — no <Model>, <Reality>, or 3D scenes.
+ */
+
+const gestureStarterCode = `import { useState } from 'react'
+
+export default function GestureCard() {
+  // The status label reflects the most recent interaction.
+  const [status, setStatus] = useState('Ready')
+
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* the spatial card — already lifted, materialized and readable in Stories 1–3 */}
+      <div
+        enable-xr
+        style={{
+          '--xr-back': '60px',
+          '--xr-background-material': 'translucent',
+          width: 240,
+          padding: 26,
+          borderRadius: 22,
+          color: '#ede9fe',
+          textAlign: 'center',
+          cursor: 'pointer',
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.22), rgba(217,70,239,0.08))',
+          border: '1px solid rgba(139,92,246,0.45)',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <div style={{ fontSize: 30 }}>🤏</div>
+        <h2 style={{ margin: '8px 0 0', fontSize: 17, fontWeight: 700 }}>Touch me</h2>
+        {/* the status label — interaction feedback appears here */}
+        <p style={{ fontFamily: 'monospace', fontSize: 12, opacity: 0.75, margin: '10px 0 0' }}>
+          {status}
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+const gestureFinalCode = `import { useState } from 'react'
+
+export default function GestureCard() {
+  // The status label reflects the most recent interaction.
+  const [status, setStatus] = useState('Ready')
+
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%', perspective: 800 }}>
+      {/* the spatial card — already lifted, materialized and readable in Stories 1–3 */}
+      <div
+        enable-xr
+        // Normal web click still works — keeps the card useful in any browser.
+        onClick={() => setStatus('Clicked')}
+        // Spatial tap: the gesture-native way to select a spatial element.
+        onSpatialTap={() => setStatus('Spatial tap')}
+        // Spatial drag streams a translation (px) from where the drag began.
+        onSpatialDragStart={() => setStatus('Drag started')}
+        onSpatialDrag={(e) => setStatus('Dragging ' + Math.round(e.translationX) + ', ' + Math.round(e.translationY))}
+        onSpatialDragEnd={() => setStatus('Drag ended')}
+        // Rotate and magnify: turning and resizing gestures.
+        onSpatialRotate={() => setStatus('Rotating')}
+        onSpatialRotateEnd={() => setStatus('Rotate ended')}
+        onSpatialMagnify={(e) => setStatus('Magnify ' + Math.round(e.magnification * 100) + '%')}
+        onSpatialMagnifyEnd={() => setStatus('Magnify ended')}
+        style={{
+          '--xr-back': '60px',
+          '--xr-background-material': 'translucent',
+          width: 240,
+          padding: 26,
+          borderRadius: 22,
+          color: '#ede9fe',
+          textAlign: 'center',
+          cursor: 'pointer',
+          background: 'linear-gradient(135deg, rgba(139,92,246,0.22), rgba(217,70,239,0.08))',
+          border: '1px solid rgba(139,92,246,0.45)',
+          boxShadow: '0 24px 60px rgba(124,58,237,0.35)',
+        }}
+      >
+        <div style={{ fontSize: 30 }}>🤏</div>
+        <h2 style={{ margin: '8px 0 0', fontSize: 17, fontWeight: 700 }}>Touch me</h2>
+        {/* the status label — interaction feedback appears here */}
+        <p style={{ fontFamily: 'monospace', fontSize: 12, opacity: 0.75, margin: '10px 0 0' }}>
+          {status}
+        </p>
+      </div>
+    </div>
+  )
+}`
+
+export const gestureCardLesson: Lesson = {
+  id: 'gesture-card',
+  chapter: 'Natural Interactions',
+  title: 'Make a spatial card respond to gestures',
+  intro:
+    'Now that your card floats in space, make it respond when someone taps, drags, rotates, or magnifies it.',
+  learn: [
+    'How normal web interactions still work',
+    'How spatial tap differs from a regular click',
+    'How to listen for spatial drag',
+    'How to expose rotate and magnify gestures',
+    'How to show feedback without overwhelming the UI',
+  ],
+  fileName: 'GestureCard.tsx',
+  starterCode: gestureStarterCode,
+  finalCode: gestureFinalCode,
+  steps: [
+    {
+      id: 'baseline',
+      title: 'Start with a touchable spatial card',
+      explanation:
+        'This card is already spatial. Now you’ll make its interaction state visible.',
+      task: 'Find the card element and the small status label in the editor.',
+      anchors: ['enable-xr', 'const [status, setStatus]', '{status}'],
+      validation: { type: 'manual' },
+      completionMessage:
+        'This is the baseline: a spatial card with a place to show interaction feedback.',
+    },
+    {
+      id: 'web-click',
+      title: 'Keep normal web interaction',
+      explanation:
+        'Natural interaction still respects normal web patterns. A spatial element can remain a regular clickable React element.',
+      task: "Add a regular onClick handler that updates the status label, e.g. onClick={() => setStatus('Clicked')}.",
+      anchors: ['enable-xr', 'onClick'],
+      validation: { type: 'contains', value: 'onClick' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'enable-xr',
+        text: "        onClick={() => setStatus('Clicked')}",
+      },
+      hint: 'Start with onClick before adding spatial gesture handlers.',
+      experiment: 'Change the status text and click again.',
+      completionMessage: 'Good — the card still works like normal web UI.',
+      notYet:
+        'Not quite yet — add an onClick handler to the spatial card, then try Next again.',
+    },
+    {
+      id: 'spatial-tap',
+      title: 'Add spatial tap',
+      explanation:
+        'Spatial tap is the gesture-specific version of selecting a spatial element.',
+      task: "Add a spatial tap handler to the card, e.g. onSpatialTap={() => setStatus('Spatial tap')}.",
+      anchors: ['onClick', 'onSpatialTap'],
+      validation: { type: 'contains', value: 'onSpatialTap' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onClick',
+        text: "        onSpatialTap={() => setStatus('Spatial tap')}",
+      },
+      hint: 'Place onSpatialTap on the same spatialized element that has enable-xr.',
+      experiment:
+        'Keep both onClick and onSpatialTap so the example works in browser fallback and spatial runtime.',
+      fallbackNote:
+        'This gesture runs in a supported spatial runtime. You can still review the handler here, then continue.',
+      completionMessage: 'The card now listens for spatial tap.',
+      notYet:
+        'Not quite yet — add onSpatialTap to the spatial card, then try Next again.',
+    },
+    {
+      id: 'spatial-drag',
+      title: 'Add spatial drag feedback',
+      explanation:
+        'Spatial drag lets a user hold and move a spatial element instead of only selecting it.',
+      task: 'Add onSpatialDragStart, onSpatialDrag, and onSpatialDragEnd handlers that update the status label. The drag event exposes e.translationX and e.translationY.',
+      anchors: ['onSpatialDragStart', 'onSpatialDrag', 'onSpatialDragEnd'],
+      validation: { type: 'contains', value: 'onSpatialDrag' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onSpatialTap',
+        text:
+          "        onSpatialDragStart={() => setStatus('Drag started')}\n" +
+          "        onSpatialDrag={(e) => setStatus('Dragging ' + Math.round(e.translationX) + ', ' + Math.round(e.translationY))}\n" +
+          "        onSpatialDragEnd={() => setStatus('Drag ended')}",
+      },
+      hint: 'Start with feedback text first. Moving the element can come after the gesture is connected.',
+      experiment: 'Show drag feedback in the card before trying to move the card itself.',
+      fallbackNote:
+        'This gesture runs in a supported spatial runtime. You can still review the handlers here, then continue.',
+      completionMessage: 'The card now responds while it is being dragged.',
+      notYet:
+        'Not quite yet — add an onSpatialDrag handler to the spatial card, then try Next again.',
+    },
+    {
+      id: 'rotate-magnify',
+      title: 'Compare rotate and magnify',
+      explanation:
+        'Rotate and magnify are spatial gestures for turning and resizing content.',
+      task: 'Add onSpatialRotate and onSpatialMagnify handlers that update the status label. The magnify event exposes e.magnification (1 = 100%).',
+      anchors: ['onSpatialRotate', 'onSpatialMagnify'],
+      validation: { type: 'containsAll', values: ['onSpatialRotate', 'onSpatialMagnify'] },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'onSpatialDragEnd',
+        text:
+          "        onSpatialRotate={() => setStatus('Rotating')}\n" +
+          "        onSpatialRotateEnd={() => setStatus('Rotate ended')}\n" +
+          "        onSpatialMagnify={(e) => setStatus('Magnify ' + Math.round(e.magnification * 100) + '%')}\n" +
+          "        onSpatialMagnifyEnd={() => setStatus('Magnify ended')}",
+      },
+      hint: 'Keep this step focused on recognizing the gestures. Do not build a full transform editor yet.',
+      fallbackNote:
+        'Rotate and magnify run in a supported spatial runtime. Review the handlers here, then continue.',
+      completionMessage:
+        'You connected tap, drag, rotate, and magnify gestures to a spatial card.',
+      notYet:
+        'Not quite yet — add onSpatialRotate and onSpatialMagnify to the spatial card, then try Next again.',
+    },
+  ],
+  wrapUp: {
+    title: 'What you built',
+    copy: 'You started with a spatial card, kept normal web click behavior, then added spatial tap, drag, rotate, and magnify feedback.',
+    concepts: [
+      'Natural interactions make spatial UI feel touchable.',
+      'Normal web interactions still matter.',
+      'onClick keeps the example useful in regular browsers.',
+      'onSpatialTap handles spatial selection.',
+      'onSpatialDrag handles movement-like interaction.',
+      'onSpatialRotate and onSpatialMagnify handle turning and resizing.',
+      'Gesture handlers should give clear visual feedback.',
+    ],
+  },
+  next: {
+    title: '3D Content Containers: <Model>',
+    note: 'coming next',
+  },
+}
+
 /** Lessons in order — Learn Mode walks them as a chapter-based progression. */
-export const lessons: Lesson[] = [liftCardLesson, rotateCardLesson, materialCardLesson]
+export const lessons: Lesson[] = [
+  liftCardLesson,
+  rotateCardLesson,
+  materialCardLesson,
+  gestureCardLesson,
+]
 
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
 export const upcomingLessons: LockedLesson[] = [
-  { title: 'Natural Interactions', note: 'coming next' },
-  { title: '3D Content Containers: <Model>', note: 'locked' },
+  { title: '3D Content Containers: <Model>', note: 'coming next' },
   { title: '3D Content Containers: <Reality>', note: 'locked' },
 ]

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles, ArrowRight, RotateCcw, Lightbulb, Wand2, Target } from 'lucide-react'
+import { Sparkles, ArrowRight, RotateCcw, Lightbulb, Wand2, Target, Headphones } from 'lucide-react'
 import type { Lesson, TutorialStep } from '@/tutorial/lesson'
 import { StepProgress } from './StepProgress'
 import { HintPanel } from './HintPanel'
@@ -27,6 +27,7 @@ export function StepCard({
   onDoItForMe,
   autoTyping,
   notYet,
+  fallbackNote,
   completed,
   nextLabel,
   onReset,
@@ -45,6 +46,8 @@ export function StepCard({
   autoTyping: boolean
   /** Gentle "not quite yet" copy to show after a failed Next, if any. */
   notYet: string | null
+  /** Honest "runs on a spatial runtime" note for the current step, if any. */
+  fallbackNote?: string
   /** Whether this step's task has been satisfied (shows completion message). */
   completed: boolean
   /** Label for the primary action (e.g. "Next", "Looks good", "Finish"). */
@@ -99,6 +102,18 @@ export function StepCard({
           <span>
             <span className="text-white/55">Experiment (optional):</span> {step.experiment}
           </span>
+        </motion.div>
+      )}
+
+      {/* Honest fallback note for gestures the flat preview can't trigger.
+          Calm and informational — it explains, it never blocks. */}
+      {fallbackNote && (
+        <motion.div
+          variants={riseItem}
+          className="flex items-start gap-2 rounded-lg border border-sky-400/15 bg-sky-400/[0.06] px-3 py-2"
+        >
+          <Headphones size={13} className="mt-0.5 shrink-0 text-sky-300/80" />
+          <p className="m-0 text-[12px] leading-relaxed text-sky-100/75">{fallbackNote}</p>
         </motion.div>
       )}
 
