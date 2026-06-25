@@ -97,16 +97,23 @@ export interface TutorialStep {
   completionMessage?: string
   /** Gentle copy shown when a `contains` check hasn't passed yet. */
   notYet?: string
+  /**
+   * A terminal command this step is really about (e.g. `npm install …`). Shown
+   * as a copyable mono chip. Used by setup-style lessons where the action is a
+   * command, not only a file edit.
+   */
+  command?: string
+  /** Equivalent commands for other package managers (pnpm / yarn). */
+  altCommands?: string[]
 }
 
-/** A future lesson surfaced as "coming next" — present but never distracting. */
-export interface LockedLesson {
-  title: string
-  note?: string
-}
-
-export interface Lesson {
-  id: string
+/**
+ * The display-only fields shared by every lesson kind — the guided code lessons
+ * ({@link Lesson}) and the setup walkthrough (`SetupLesson` in `./setup`). The
+ * intro / step / wrap-up cards render from just these, so both kinds reuse the
+ * exact same Learn Mode chrome.
+ */
+export interface LessonMeta {
   /** Docs-aligned chapter title — the WebSpatial concept, not a demo name. */
   chapter: string
   /** The lesson's own title. */
@@ -115,12 +122,6 @@ export interface Lesson {
   intro: string
   /** A few "what you'll learn" bullets. */
   learn: string[]
-  fileName: string
-  /** The step-1 baseline the editor seeds from. */
-  starterCode: string
-  /** The completed lesson, used by "Copy final code". */
-  finalCode: string
-  steps: TutorialStep[]
   wrapUp: {
     title: string
     copy: string
@@ -128,6 +129,22 @@ export interface Lesson {
   }
   /** The next lesson, shown disabled / "coming next". */
   next?: LockedLesson
+}
+
+/** A future lesson surfaced as "coming next" — present but never distracting. */
+export interface LockedLesson {
+  title: string
+  note?: string
+}
+
+export interface Lesson extends LessonMeta {
+  id: string
+  fileName: string
+  /** The step-1 baseline the editor seeds from. */
+  starterCode: string
+  /** The completed lesson, used by "Copy final code". */
+  finalCode: string
+  steps: TutorialStep[]
 }
 
 /* ────────────────────────────────────────────────────────────────────── */

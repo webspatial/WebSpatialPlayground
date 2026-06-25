@@ -30,7 +30,8 @@ export function ChapterRail({
       <div className="flex flex-col gap-0.5">
         {chapters.map((ch, i) => {
           const active = ch.id === activeId
-          const hasLesson = !!ch.lesson
+          const hasLesson = !!ch.lesson || !!ch.setup
+          const hasDemo = !!ch.snippet
           return (
             <button
               key={ch.id}
@@ -64,8 +65,8 @@ export function ChapterRail({
                   <Tag
                     icon={<FlaskConical size={10} />}
                     label="Demo"
-                    on
-                    lit={active && mode === 'playground'}
+                    on={hasDemo}
+                    lit={active && mode === 'playground' && hasDemo}
                   />
                 </span>
               </span>

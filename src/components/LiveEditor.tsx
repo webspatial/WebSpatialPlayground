@@ -4,6 +4,8 @@ import Prism from 'prismjs'
 import 'prismjs/components/prism-jsx'
 import 'prismjs/components/prism-tsx'
 import 'prismjs/components/prism-typescript'
+// `markup` (HTML) ships with Prism core; `json` is added for setup config files.
+import 'prismjs/components/prism-json'
 
 // Type metrics shared by the textarea, the highlight layer and the line bands.
 // fontSize × lineHeight = 12.5 × 1.6 = 20px per line; 16px top/left padding.

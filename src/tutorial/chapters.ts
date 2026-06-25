@@ -10,29 +10,46 @@
  * tinkering with it without losing their place.
  */
 import { lessons, type Lesson } from './lesson'
+import { setupLesson, type SetupLesson } from './setup'
 import { snippets, type Snippet } from '@/examples/snippets'
 
 export interface Chapter {
-  /** Stable key — reuses the snippet id. */
+  /** Stable key — reuses the snippet id (or the setup lesson id for Story 0). */
   id: string
   /** The concept name, shown in navigation. */
   title: string
   /** The guided lesson for this concept, when one exists. */
   lesson?: Lesson
-  /** The open playground example for this concept. */
-  snippet: Snippet
+  /**
+   * The Story 0 setup walkthrough, when this chapter is the setup chapter. It's
+   * a Learn-only chapter, so it has no snippet — Playground falls back to Learn.
+   */
+  setup?: SetupLesson
+  /** The open playground example for this concept, when one exists. */
+  snippet?: Snippet
+}
+
+/** Story 0 — a Learn-only setup chapter that sits before the first concept. */
+const setupChapter: Chapter = {
+  id: setupLesson.id,
+  title: setupLesson.chapter,
+  setup: setupLesson,
 }
 
 /**
- * Concept-ordered chapters. The snippet order is the teaching progression, so we
- * walk it and attach the lesson that teaches the same concept (matched by name).
+ * Concept-ordered chapters. Story 0 (setup) leads, then the snippet order is the
+ * teaching progression: we walk it and attach the lesson that teaches the same
+ * concept (matched by name).
  */
-export const chapters: Chapter[] = snippets.map((snippet) => ({
-  id: snippet.id,
-  title: snippet.title,
-  snippet,
-  lesson: lessons.find((l) => l.chapter === snippet.title),
-}))
+export const chapters: Chapter[] = [
+  setupChapter,
+  ...snippets.map((snippet) => ({
+    id: snippet.id,
+    title: snippet.title,
+    snippet,
+    lesson: lessons.find((l) => l.chapter === snippet.title),
+  })),
+]
 
 /** Look up a chapter by id, falling back to the first chapter. */
 export function chapterById(id: string): Chapter {
@@ -50,5 +67,5 @@ export function chapterById(id: string): Chapter {
 export function nextLessonChapter(id: string): Chapter | undefined {
   const idx = chapters.findIndex((c) => c.id === id)
   const next = chapters[idx + 1]
-  return next?.lesson ? next : undefined
+  return next?.lesson || next?.setup ? next : undefined
 }

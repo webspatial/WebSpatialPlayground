@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { PartyPopper, Copy, Check, RotateCcw, Lock, ArrowRight } from 'lucide-react'
-import type { Lesson } from '@/tutorial/lesson'
+import type { LessonMeta } from '@/tutorial/lesson'
 import { PlaygroundModeLink } from './PlaygroundModeLink'
 import { phaseContainer, riseItem, pressable, softSpring } from './motion'
 
@@ -20,10 +20,11 @@ export function WrapUp({
   onOpenPlayground,
   onNextLesson,
 }: {
-  lesson: Lesson
+  lesson: LessonMeta
   onCopyFinal: () => void
   onResetLesson: () => void
-  onOpenPlayground: () => void
+  /** Jump to this concept's Playground — omitted for Learn-only chapters. */
+  onOpenPlayground?: () => void
   /** When set, the next lesson is unlocked and the row becomes a Start button. */
   onNextLesson?: () => void
 }) {
@@ -97,7 +98,7 @@ export function WrapUp({
           <RotateCcw size={12} />
           Reset lesson
         </motion.button>
-        <PlaygroundModeLink onOpen={onOpenPlayground} />
+        {onOpenPlayground && <PlaygroundModeLink onOpen={onOpenPlayground} />}
       </motion.div>
 
       {lesson.next &&
