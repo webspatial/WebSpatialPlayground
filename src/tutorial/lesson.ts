@@ -93,6 +93,64 @@ export interface LockedLesson {
   note?: string
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Multi-lesson chapters                                                   */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Most chapters teach one concept in a single lesson. Some concepts are too big
+ * for that — `<Reality>` is a whole programmable 3D system — so they're taught
+ * as a *chapter of several short lessons*, Apple-tutorial style: a chapter
+ * overview, a handful of focused lessons, then a chapter wrap-up. These types
+ * describe that container; each inner lesson is an ordinary {@link Lesson}, so
+ * the same shell, editor and preview drive it unchanged.
+ */
+
+/** One clickable lesson card on the chapter overview. */
+export interface LessonCard {
+  title: string
+  /** One-sentence description. */
+  description: string
+  /** Rough effort, e.g. "3–5 min". */
+  estTime: string
+}
+
+/** The calm chapter overview shown before the first lesson. */
+export interface ChapterOverview {
+  title: string
+  subtitle: string
+  /** A single sentence framing the whole chapter's mental model. */
+  mentalModel: string
+  /** Short paragraph describing what the chapter builds. */
+  copy: string
+  /** One card per lesson, in order. */
+  cards: LessonCard[]
+}
+
+/** The chapter-level wrap-up after the final lesson. */
+export interface ChapterWrapUp {
+  title: string
+  copy: string
+  concepts: string[]
+  /** The story this chapter leads into. */
+  nextStory?: { title: string; note?: string }
+}
+
+/**
+ * A chapter taught as several lessons: an overview, the ordered lessons, and a
+ * chapter wrap-up. The lessons share one `chapter` name; the shell walks them in
+ * sequence and only celebrates the chapter wrap once the last lesson is done.
+ */
+export interface LessonChapter {
+  /** Stable key — reuses the matching snippet id. */
+  id: string
+  /** The docs-aligned concept name, shared by every inner lesson. */
+  chapter: string
+  overview: ChapterOverview
+  lessons: Lesson[]
+  wrapUp: ChapterWrapUp
+}
+
 export interface Lesson {
   id: string
   /** Docs-aligned chapter title — the WebSpatial concept, not a demo name. */
@@ -1139,5 +1197,5 @@ export const lessons: Lesson[] = [
 
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
 export const upcomingLessons: LockedLesson[] = [
-  { title: '3D Content Containers: <Reality>', note: 'coming next' },
+  { title: 'Dynamic 3D Containers: Animation', note: 'coming next' },
 ]

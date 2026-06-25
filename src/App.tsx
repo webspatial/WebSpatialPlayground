@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
 import './App.css'
 import { docLinks } from './examples/snippets'
-import { chapters, chapterById, nextLessonChapter } from './tutorial/chapters'
+import {
+  chapters,
+  chapterById,
+  chapterCanLearn,
+  nextLessonChapter,
+} from './tutorial/chapters'
 import { RuntimeBadge } from './components/RuntimeBanner'
 import { ModeSwitcher, type AppMode } from './components/ModeSwitcher'
 import { ChapterRail } from './components/ChapterRail'
 import { TutorialShell } from './components/tutorial/TutorialShell'
+import { ChapterShell } from './components/tutorial/ChapterShell'
 import { PlaygroundShell } from './components/PlaygroundShell'
 import { BookOpen, Github, FileCode2 } from 'lucide-react'
 
@@ -18,16 +24,23 @@ function App() {
   const [chapterId, setChapterId] = useState(chapters[0].id)
 
   const chapter = useMemo(() => chapterById(chapterId), [chapterId])
-  const canLearn = !!chapter.lesson
+  const canLearn = chapterCanLearn(chapter)
   // What's actually shown: Learn only when the chapter has a lesson to teach.
   const effectiveMode: AppMode = mode === 'learn' && canLearn ? 'learn' : 'playground'
   const nextChapter = useMemo(() => nextLessonChapter(chapterId), [chapterId])
+  // The chapter immediately after this one, regardless of whether it teaches a
+  // lesson — used by a multi-lesson chapter's "next story" link, which may point
+  // at a demo-only chapter (it simply opens in Playground Mode).
+  const rawNextChapter = useMemo(() => {
+    const idx = chapters.findIndex((c) => c.id === chapterId)
+    return chapters[idx + 1]
+  }, [chapterId])
 
   // Choosing Learn on a demo-only chapter jumps to the nearest one that teaches,
   // so the Learn toggle always lands on something to learn.
   const onModeChange = (m: AppMode) => {
     if (m === 'learn' && !canLearn) {
-      const firstLesson = chapters.find((c) => c.lesson)
+      const firstLesson = chapters.find(chapterCanLearn)
       if (firstLesson) setChapterId(firstLesson.id)
     }
     setMode(m)
@@ -72,7 +85,22 @@ function App() {
       <div className="flex min-h-0 flex-1">
         <ChapterRail activeId={chapterId} mode={effectiveMode} onSelect={setChapterId} />
         <div className="flex min-h-0 flex-1 flex-col">
-          {effectiveMode === 'learn' && chapter.lesson ? (
+          {effectiveMode === 'learn' && chapter.lessonChapter ? (
+            <ChapterShell
+              // Remount on chapter change so cross-lesson state resets cleanly.
+              key={chapter.lessonChapter.id}
+              chapter={chapter.lessonChapter}
+              onOpenPlayground={() => setMode('playground')}
+              onNextStory={
+                rawNextChapter
+                  ? () => {
+                      setChapterId(rawNextChapter.id)
+                      setMode('playground')
+                    }
+                  : undefined
+              }
+            />
+          ) : effectiveMode === 'learn' && chapter.lesson ? (
             <TutorialShell
               // Remount on lesson change so the shell reseeds its editor + phase.
               key={chapter.lesson.id}
