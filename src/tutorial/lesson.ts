@@ -582,6 +582,11 @@ export const materialCardLesson: Lesson = {
       task: "Add '--xr-background-material': 'translucent' to the card style.",
       anchors: ['--xr-back', '--xr-background-material'],
       validation: { type: 'contains', value: '--xr-background-material' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: "'--xr-back'",
+        text: "          '--xr-background-material': 'translucent',",
+      },
       hint: "Place '--xr-background-material' next to '--xr-back'.",
       experiment: 'Try turning the property off and on to compare the difference.',
       completionMessage: 'The card now has a material backplate.',
@@ -608,6 +613,11 @@ export const materialCardLesson: Lesson = {
       task: "Raise borderRadius and add a subtle border, e.g. border: '1px solid rgba(139, 92, 246, 0.45)'.",
       anchors: ['borderRadius', 'border:'],
       validation: { type: 'contains', value: 'border:' },
+      autoType: {
+        mode: 'insertLineAfter',
+        anchor: 'background:',
+        text: "          border: '1px solid rgba(139, 92, 246, 0.45)',",
+      },
       hint: 'Use a soft border, not a heavy outline.',
       experiment: 'Try a smaller radius, then a larger one, and compare how the panel feels.',
       completionMessage: 'The material now has a clear shape.',
