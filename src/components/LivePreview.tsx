@@ -37,6 +37,7 @@ export function LivePreview({
   source,
   debounceMs = 250,
   onRangeInput,
+  onValidityChange,
   annotation,
   gentleErrors = false,
 }: {
@@ -44,6 +45,8 @@ export function LivePreview({
   debounceMs?: number
   /** Fires when a range <input> inside the preview is dragged (slider steps). */
   onRangeInput?: () => void
+  /** Reports whether the current source compiles + renders (Learn Mode gating). */
+  onValidityChange?: (valid: boolean) => void
   /** Subtle caption shown over the stage, e.g. a fallback note for Learn Mode. */
   annotation?: string
   /** Use calm, beginner-friendly error copy instead of the raw red banner. */
@@ -60,15 +63,17 @@ export function LivePreview({
       const { Component: C, error: e } = compile(source)
       if (e) {
         setError(e)
+        onValidityChange?.(false)
         return
       }
       setError(null)
+      onValidityChange?.(true)
       setComp(() => C)
       versionRef.current += 1
       setVersion(versionRef.current)
     }, debounceMs)
     return () => clearTimeout(t)
-  }, [source, debounceMs])
+  }, [source, debounceMs, onValidityChange])
 
   // Detect interaction with any range slider the user's component renders.
   useEffect(() => {
@@ -90,7 +95,13 @@ export function LivePreview({
       <div ref={stageRef} className="ws-stage relative flex flex-1 items-center justify-center overflow-auto p-8 min-h-0">
         <div key={version} className="relative z-10 flex h-full w-full items-center justify-center">
           {Comp ? (
-            <PreviewBoundary resetKey={String(version)} onError={setError}>
+            <PreviewBoundary
+              resetKey={String(version)}
+              onError={(msg) => {
+                setError(msg)
+                onValidityChange?.(false)
+              }}
+            >
               <Comp />
             </PreviewBoundary>
           ) : null}

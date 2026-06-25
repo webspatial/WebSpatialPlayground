@@ -32,7 +32,7 @@ const DOCS = 'https://webspatial.dev/docs/api/react-sdk'
 
 const floatingCard: Snippet = {
   id: 'xr-back',
-  title: 'Floating glass card',
+  title: 'Spatialized HTML Elements',
   blurb:
     'Lift a spatialized element toward the viewer with the --xr-back CSS property and give it a native glass backplate with --xr-background-material. Drag the slider — the live component re-renders as you type or interact.',
   docs: [
@@ -86,7 +86,7 @@ export default function FloatingCard() {
 
 const spatialTransform: Snippet = {
   id: 'transform',
-  title: 'True 3D transform',
+  title: 'CSS API: Spatial Transform',
   blurb:
     'On a spatialized element the standard CSS transform becomes a real 3D transform — rotateX/Y/Z, translateZ and scaleZ act in actual space instead of a flat projection. Rotate the panel with the sliders.',
   docs: [
@@ -138,7 +138,7 @@ export default function SpatialTransform() {
 
 const backgroundMaterial: Snippet = {
   id: 'background-material',
-  title: 'Background materials',
+  title: 'CSS API: background-material',
   blurb:
     'Swap a solid background for a real-time rendered backplate material. Cycle through the supported values — on visionOS / PICO OS these render as native glass.',
   docs: [{ label: '--xr-background-material', url: DOCS + '/css-api/background-material' }],
@@ -190,7 +190,7 @@ export default function BackgroundMaterial() {
 
 const spatialEvents: Snippet = {
   id: 'events',
-  title: 'Spatial gestures',
+  title: 'Natural Interactions',
   blurb:
     'Spatial events map natural input to familiar handlers: onSpatialTap fires on gaze + pinch (visionOS) or touch (PICO), onSpatialDrag streams a translation. Pointer events are wired alongside so it all works on desktop too.',
   docs: [
@@ -244,7 +244,7 @@ export default function SpatialGestures() {
 
 const model3d: Snippet = {
   id: 'model',
-  title: '<Model> — 3D asset',
+  title: '3D Content Containers: <Model>',
   blurb:
     'The <Model> component renders a static 3D asset (.usdz / .glb / .reality) as real volumetric content on a headset while laying out as a 2D plane in the page. Change the src to load any model live.',
   docs: [
@@ -282,7 +282,7 @@ export default function ModelDemo() {
 
 const reality3d: Snippet = {
   id: 'reality',
-  title: '<Reality> — programmable 3D',
+  title: '3D Content Containers: <Reality>',
   blurb:
     'The <Reality> container renders arbitrary 3D with the SDK engine API: declare an <UnlitMaterial>, then compose primitive entities (BoxEntity, SphereEntity, ConeEntity, CylinderEntity) inside a <SceneGraph>. Change the shape and colour — the scene graph rebuilds live.',
   docs: [
@@ -339,7 +339,7 @@ export default function RealityDemo() {
 
 const animatedReality: Snippet = {
   id: 'reality-animated',
-  title: '<Reality> — animated equalizer',
+  title: 'Dynamic 3D Containers: Animation',
   blurb:
     'A live scene graph driven by an animation loop. Each bar is a BoxEntity whose height and colour update every frame — the same React state that would drive a 2D chart drives real 3D geometry.',
   docs: [

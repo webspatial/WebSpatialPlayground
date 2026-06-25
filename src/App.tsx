@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './App.css'
 import { docLinks } from './examples/snippets'
-import { liftCardLesson } from './tutorial/lesson'
+import { lessons } from './tutorial/lesson'
 import { RuntimeBadge } from './components/RuntimeBanner'
 import { ModeSwitcher, type AppMode } from './components/ModeSwitcher'
 import { TutorialShell } from './components/tutorial/TutorialShell'
@@ -10,6 +10,11 @@ import { BookOpen, Github, FileCode2 } from 'lucide-react'
 
 function App() {
   const [mode, setMode] = useState<AppMode>('learn')
+  // Which lesson Learn Mode is on — the chapter-based progression walks `lessons`.
+  const [lessonIndex, setLessonIndex] = useState(0)
+
+  const lesson = lessons[lessonIndex]
+  const hasNextLesson = lessonIndex < lessons.length - 1
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#0a0a0f] text-white">
@@ -48,7 +53,15 @@ function App() {
 
       {/* ─── Mode body ─── */}
       {mode === 'learn' ? (
-        <TutorialShell lesson={liftCardLesson} onOpenPlayground={() => setMode('playground')} />
+        <TutorialShell
+          // Remount on lesson change so the shell reseeds its editor + phase.
+          key={lesson.id}
+          lesson={lesson}
+          onOpenPlayground={() => setMode('playground')}
+          onNextLesson={
+            hasNextLesson ? () => setLessonIndex((i) => i + 1) : undefined
+          }
+        />
       ) : (
         <PlaygroundShell />
       )}
