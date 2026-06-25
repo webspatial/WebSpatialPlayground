@@ -105,7 +105,7 @@ export function PlaygroundShell() {
           </div>
 
           <div className="min-h-0 flex-1">
-            <LivePreview source={code} />
+            <LivePreview source={code} annotation={snippet.previewNote} />
           </div>
 
           {/* Per-example explanation + doc deep-links */}
