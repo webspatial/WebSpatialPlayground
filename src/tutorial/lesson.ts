@@ -1300,6 +1300,219 @@ export const modelLesson: Lesson = {
   },
 }
 
+/* ────────────────────────────────────────────────────────────────────── */
+/*  Chapter: Dynamic 3D Containers: Animation · Story 7                     */
+/* ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Story 6 built a *static* <Reality> scene. This story makes one move: it drives
+ * that scene every frame. The lesson starts from a finished but frozen miniature
+ * solar system — a star and three planets parked at fixed points — and turns it
+ * into a live orbit with a single, ordinary React animation loop: a `t` clock in
+ * state, a requestAnimationFrame tick, and planet positions computed from `t`.
+ *
+ * The idea the whole lesson protects is "animate transforms, not geometry":
+ * every frame changes only each planet's position, so the SDK moves an existing
+ * entity with a cheap transform update and the sphere mesh is built once, never
+ * rebuilt. Animating geometry (radius / shape) would destroy and recreate the
+ * mesh every frame. finalCode is derived from the starter + the chain of "do it
+ * for me" edits, and matches the `reality-animated` Playground snippet so Learn
+ * and Playground stay in step.
+ */
+
+const animStarterCode = `import { Reality, SceneGraph, UnlitMaterial, SphereEntity } from '@webspatial/react-sdk'
+
+// A miniature solar system — but a STATIC one. The star sits at the center and
+// each planet is parked at a fixed point. Nothing moves yet: there's no clock
+// and no animation loop. We'll add both, and let the loop drive only the
+// planets' POSITION every frame.
+const PLANETS = [
+  { id: 'mercury', orbit: 0.10, speed: 1.6, size: 0.018, hue: 35 },
+  { id: 'venus', orbit: 0.15, speed: 1.1, size: 0.026, hue: 200 },
+  { id: 'earth', orbit: 0.21, speed: 0.8, size: 0.030, hue: 280 },
+]
+
+// Center of the volume, pushed toward the viewer so the orbit has depth.
+const CENTER_Z = 0.22
+
+export default function SolarSystem() {
+  return (
+    <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+      <Reality style={{ width: 380, height: 320 }}>
+        <UnlitMaterial id="sun" color="#fbbf24" />
+        {PLANETS.map((p) => (
+          <UnlitMaterial key={p.id} id={p.id}
+            color={'hsl(' + p.hue + ', 80%, 65%)'} />
+        ))}
+        <SceneGraph>
+          {/* The star, fixed at the center of the volume. */}
+          <SphereEntity materials={['sun']} radius={0.05}
+            position={{ x: 0, y: 0, z: CENTER_Z }} />
+          {/* Planets, parked at a fixed angle for now. */}
+          {PLANETS.map((p) => (
+            <SphereEntity key={p.id} materials={[p.id]} radius={p.size}
+              position={{ x: p.orbit, y: 0, z: CENTER_Z }} />
+          ))}
+        </SceneGraph>
+      </Reality>
+    </div>
+  )
+}`
+
+const animSteps: TutorialStep[] = [
+  {
+    id: 'static-scene',
+    title: 'Start from a static scene',
+    explanation:
+      'This is a finished Reality scene from Story 6 — a star and three planets — but it is completely frozen. There is no clock and no animation loop, so the planets just sit at a fixed angle.',
+    task: 'Find the planets that are parked at a fixed position.',
+    anchors: ['parked at a fixed angle', 'x: p.orbit, y: 0, z: CENTER_Z'],
+    validation: { type: 'manual' },
+    completionMessage: 'This is the static scene we will bring to life.',
+  },
+  {
+    id: 'import-hooks',
+    title: 'Import the React hooks',
+    explanation:
+      'Animation here is just ordinary React: state to hold the current time, and an effect to advance it every frame. Both come from react itself — there is no special SDK animation API.',
+    task: 'Import useEffect and useState from react.',
+    anchors: ['useEffect', 'useState', "from 'react'"],
+    validation: { type: 'containsAll', values: ['useEffect', 'useState'] },
+    autoType: {
+      mode: 'insertBefore',
+      anchor: 'import { Reality,',
+      text: "import { useEffect, useState } from 'react'\n",
+    },
+    completionMessage: 'The animation will be driven by plain React state.',
+    notYet:
+      "Not quite yet — import useEffect and useState from 'react', then try Next again.",
+  },
+  {
+    id: 'time-state',
+    title: 'Add a clock in state',
+    explanation:
+      'A single number t is the whole clock. Storing it in state means every change re-renders the scene, so the entities follow t as it advances.',
+    task: 'Add a t state value, starting at 0, at the top of the component.',
+    anchors: ['const [t, setT]', 'useState(0)'],
+    validation: { type: 'contains', value: 'useState(0)' },
+    autoType: {
+      mode: 'insertLineAfter',
+      anchor: 'export default function SolarSystem() {',
+      text: '  const [t, setT] = useState(0)',
+    },
+    completionMessage: 'The scene now has a clock to follow.',
+    notYet:
+      'Not quite yet — add const [t, setT] = useState(0) to the component, then try Next again.',
+  },
+  {
+    id: 'animation-loop',
+    title: 'Advance the clock every frame',
+    explanation:
+      'requestAnimationFrame calls back once per display frame. Each tick nudges t forward (~0.016s, one frame at 60fps) and schedules the next. The cleanup cancels the loop when the component unmounts, so it never leaks.',
+    task: 'Add a useEffect that runs a requestAnimationFrame loop and cancels it on cleanup.',
+    anchors: ['useEffect', 'requestAnimationFrame', 'cancelAnimationFrame'],
+    validation: {
+      type: 'containsAll',
+      values: ['requestAnimationFrame', 'cancelAnimationFrame'],
+    },
+    autoType: {
+      mode: 'insertLineAfter',
+      anchor: 'const [t, setT] = useState(0)',
+      text: `  useEffect(() => {
+    let raf = 0
+    const tick = () => { setT((v) => v + 0.016); raf = requestAnimationFrame(tick) }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+`,
+    },
+    fallbackNote:
+      'The loop runs in any browser — but the orbit only renders as real volumetric 3D inside a WebSpatial Runtime (Vision Pro / PICO). Here the scene container stays flat.',
+    completionMessage: 'The clock now ticks every frame.',
+    notYet:
+      'Not quite yet — add the useEffect with a requestAnimationFrame loop and cancelAnimationFrame cleanup, then try Next again.',
+  },
+  {
+    id: 'orbit-position',
+    title: 'Make the planets orbit',
+    explanation:
+      'Now derive each planet’s position from t. Sweeping the angle with cos/sin walks it around a circle in the horizontal x/z plane, so it swings through real depth — passing in front of and behind the star.',
+    task: 'Replace the fixed planet position with one computed from t, the orbit radius, and the speed.',
+    anchors: ['Math.cos(t * p.speed)', 'Math.sin(t * p.speed)'],
+    validation: { type: 'contains', value: 'Math.cos(t * p.speed)' },
+    autoType: {
+      mode: 'replace',
+      anchor: `          {/* Planets, parked at a fixed angle for now. */}
+          {PLANETS.map((p) => (
+            <SphereEntity key={p.id} materials={[p.id]} radius={p.size}
+              position={{ x: p.orbit, y: 0, z: CENTER_Z }} />
+          ))}`,
+      text: `          {/* Planets orbit in the horizontal x/z plane — they swing through
+              real depth, passing in front of and behind the star. */}
+          {PLANETS.map((p) => (
+            <SphereEntity key={p.id} materials={[p.id]} radius={p.size}
+              position={{
+                x: Math.cos(t * p.speed) * p.orbit,
+                y: 0,
+                z: CENTER_Z + Math.sin(t * p.speed) * p.orbit,
+              }} />
+          ))}`,
+    },
+    fallbackNote:
+      'On a headset the planets now circle the star in real 3D. In a flat browser the container stays empty — the motion is happening in the scene, just off-screen.',
+    completionMessage: 'The planets are in orbit.',
+    notYet:
+      'Not quite yet — drive the planet position from Math.cos / Math.sin of t, then try Next again.',
+  },
+  {
+    id: 'transforms-not-geometry',
+    title: 'Animate transforms, not geometry',
+    explanation:
+      'Each frame changes only position. radius stays constant, so the sphere mesh is built once and the SDK just moves it — a cheap transform update. Animating the geometry instead (the radius or shape) would destroy and rebuild the mesh on every single frame.',
+    task: 'Notice that the loop touches position, never radius — that is what keeps a per-frame animation cheap.',
+    anchors: ['radius={p.size}', 'position={{'],
+    validation: { type: 'manual' },
+    experiment:
+      'For contrast, try pulsing the geometry: radius={p.size * (1 + 0.3 * Math.sin(t * 4))}. It works, but now every frame rebuilds each mesh instead of just moving it — prefer animating transforms.',
+    fallbackNote:
+      'The cost difference is real on-device: moving an entity reuses its mesh, while resizing it rebuilds the mesh each frame.',
+    completionMessage: 'You built a frame-driven 3D scene the efficient way.',
+  },
+]
+
+export const animationLesson: Lesson = {
+  id: 'reality-animated',
+  chapter: 'Dynamic 3D Containers: Animation',
+  title: 'Animate a 3D scene frame by frame',
+  intro:
+    'Take a static Reality scene and bring it to life: a miniature solar system whose planets orbit on a per-frame animation loop.',
+  learn: [
+    'How a plain requestAnimationFrame loop drives a 3D scene',
+    'How React state (a time value) flows into entity positions',
+    'How to compute an orbit with cos / sin in the x/z plane',
+    'Why animating an entity’s transform is cheap',
+    'Why animating an entity’s geometry rebuilds the mesh every frame',
+    'How to clean up the animation loop so it never leaks',
+  ],
+  fileName: 'SolarSystem.tsx',
+  starterCode: animStarterCode,
+  finalCode: deriveStepCode(animStarterCode, animSteps, animSteps.length - 1),
+  steps: animSteps,
+  wrapUp: {
+    title: 'What you built',
+    copy: 'You turned a frozen Reality scene into a live one: a requestAnimationFrame loop advances a time value in state, and each planet’s position is computed from it, so the whole scene graph animates every frame — driven entirely by ordinary React.',
+    concepts: [
+      'Dynamic 3D is just a render loop feeding new values into the scene.',
+      'A requestAnimationFrame loop in useEffect advances a time value in state.',
+      'Always cancelAnimationFrame on cleanup so the loop never leaks.',
+      'Entity positions are computed from that time value each render.',
+      'cos / sin over an angle traces an orbit in the x/z plane — real depth.',
+      'Animate transforms (position / rotation / scale): the mesh is reused.',
+      'Animating geometry (radius / shape) rebuilds the mesh every frame — avoid it.',
+    ],
+  },
+}
+
 /** Lessons in order — Learn Mode walks them as a chapter-based progression. */
 export const lessons: Lesson[] = [
   liftCardLesson,
@@ -1307,9 +1520,8 @@ export const lessons: Lesson[] = [
   materialCardLesson,
   gestureCardLesson,
   modelLesson,
+  animationLesson,
 ]
 
 /** Future chapters, listed quietly so the path ahead is visible but not noisy. */
-export const upcomingLessons: LockedLesson[] = [
-  { title: 'Dynamic 3D Containers: Animation', note: 'coming next' },
-]
+export const upcomingLessons: LockedLesson[] = []
