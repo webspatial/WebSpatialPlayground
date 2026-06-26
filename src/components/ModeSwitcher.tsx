@@ -1,11 +1,12 @@
-import { GraduationCap, FlaskConical } from 'lucide-react'
+import { GraduationCap, FlaskConical, Users } from 'lucide-react'
 
-export type AppMode = 'learn' | 'playground'
+export type AppMode = 'learn' | 'playground' | 'community'
 
 /**
- * Top-level switch between the guided Learn Mode and the open Playground Mode.
- * A quiet segmented control — Learn is the default, Playground is for users who
- * want every example at once.
+ * Top-level switch between the guided Learn Mode, the open Playground Mode and
+ * the Community showcase. A quiet segmented control — Learn is the default,
+ * Playground is for users who want every example at once, and Community is a
+ * gallery of demos built with WebSpatial.
  */
 export function ModeSwitcher({
   mode,
@@ -27,6 +28,12 @@ export function ModeSwitcher({
         onClick={() => onChange('playground')}
         icon={<FlaskConical size={13} />}
         label="Playground"
+      />
+      <Segment
+        active={mode === 'community'}
+        onClick={() => onChange('community')}
+        icon={<Users size={13} />}
+        label="Community"
       />
     </div>
   )
