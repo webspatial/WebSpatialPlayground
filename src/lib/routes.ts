@@ -7,12 +7,17 @@
  * concept have distinct addresses you can bookmark, link to, or land on directly.
  */
 import { chapters } from '@/tutorial/chapters'
-import type { AppMode } from '@/components/ModeSwitcher'
 
 /** `/learn/<id>` or `/playground/<id>`. */
-export const chapterPath = (mode: AppMode, id: string) => `/${mode}/${id}`
+export const chapterPath = (mode: 'learn' | 'playground', id: string) => `/${mode}/${id}`
 export const learnPath = (id: string) => chapterPath('learn', id)
 export const playgroundPath = (id: string) => chapterPath('playground', id)
+
+/**
+ * The community showcase. Unlike Learn / Playground it has no per-concept id —
+ * it's a single gallery page — so it gets its own top-level address.
+ */
+export const communityPath = () => '/community'
 
 /**
  * Where `/` (and any unknown path) lands: the first chapter that teaches, in

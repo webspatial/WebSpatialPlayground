@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
+import { CommunityPage } from './components/CommunityPage'
 import { SplashScreen } from './components/SplashScreen'
 import { defaultPath } from './lib/routes'
 
@@ -20,6 +21,8 @@ createRoot(document.getElementById('root')!).render(
       <Routes>
         <Route path="/learn/:chapterId" element={<App mode="learn" />} />
         <Route path="/playground/:chapterId" element={<App mode="playground" />} />
+        {/* Community Mode is a standalone gallery — no chapter id. */}
+        <Route path="/community" element={<CommunityPage />} />
         <Route path="*" element={<Navigate to={defaultPath()} replace />} />
       </Routes>
     </BrowserRouter>
