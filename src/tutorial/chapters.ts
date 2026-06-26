@@ -9,8 +9,9 @@
  * what lets the user pick a concept once and switch between learning it and
  * tinkering with it without losing their place.
  */
-import { lessons, type Lesson } from './lesson'
+import { lessons, type Lesson, type LessonChapter } from './lesson'
 import { setupLesson, type SetupLesson } from './setup'
+import { realityChapter } from './realityChapter'
 import { snippets, type Snippet } from '@/examples/snippets'
 
 export interface Chapter {
@@ -20,6 +21,11 @@ export interface Chapter {
   title: string
   /** The guided lesson for this concept, when one exists. */
   lesson?: Lesson
+  /**
+   * A multi-lesson chapter for this concept, when the concept is too big for a
+   * single lesson (e.g. `<Reality>`). Mutually exclusive with `lesson`.
+   */
+  lessonChapter?: LessonChapter
   /**
    * The Story 0 setup walkthrough, when this chapter is the setup chapter. It's
    * a Learn-only chapter, so it has no snippet — Playground falls back to Learn.
@@ -36,10 +42,13 @@ const setupChapter: Chapter = {
   setup: setupLesson,
 }
 
+/** Multi-lesson chapters, keyed by the concept id they teach. */
+const lessonChapters: LessonChapter[] = [realityChapter]
+
 /**
  * Concept-ordered chapters. Story 0 (setup) leads, then the snippet order is the
- * teaching progression: we walk it and attach the lesson that teaches the same
- * concept (matched by name).
+ * teaching progression: we walk it and attach the guided lesson — single-lesson
+ * or multi-lesson — that teaches the same concept (matched by name / id).
  */
 export const chapters: Chapter[] = [
   setupChapter,
@@ -48,8 +57,14 @@ export const chapters: Chapter[] = [
     title: snippet.title,
     snippet,
     lesson: lessons.find((l) => l.chapter === snippet.title),
+    lessonChapter: lessonChapters.find((c) => c.id === snippet.id),
   })),
 ]
+
+/** Does this chapter offer something to learn, in any form? */
+export function chapterCanLearn(c: Chapter): boolean {
+  return !!c.lesson || !!c.lessonChapter || !!c.setup
+}
 
 /** Look up a chapter by id, falling back to the first chapter. */
 export function chapterById(id: string): Chapter {
@@ -67,5 +82,5 @@ export function chapterById(id: string): Chapter {
 export function nextLessonChapter(id: string): Chapter | undefined {
   const idx = chapters.findIndex((c) => c.id === id)
   const next = chapters[idx + 1]
-  return next?.lesson || next?.setup ? next : undefined
+  return next && chapterCanLearn(next) ? next : undefined
 }

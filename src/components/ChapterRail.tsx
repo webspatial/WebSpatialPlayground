@@ -30,7 +30,7 @@ export function ChapterRail({
       <div className="flex flex-col gap-0.5">
         {chapters.map((ch, i) => {
           const active = ch.id === activeId
-          const hasLesson = !!ch.lesson || !!ch.setup
+          const hasLesson = !!ch.lesson || !!ch.lessonChapter || !!ch.setup
           const hasDemo = !!ch.snippet
           return (
             <button

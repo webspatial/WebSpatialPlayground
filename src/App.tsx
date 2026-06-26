@@ -2,13 +2,14 @@ import { useMemo } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import './App.css'
 import { docLinks } from './examples/snippets'
-import { chapters, nextLessonChapter } from './tutorial/chapters'
+import { chapters, chapterCanLearn, nextLessonChapter } from './tutorial/chapters'
 import { chapterPath, defaultPath, learnPath, playgroundPath } from './lib/routes'
 import { RuntimeBadge } from './components/RuntimeBanner'
 import { ModeSwitcher, type AppMode } from './components/ModeSwitcher'
 import { ChapterRail } from './components/ChapterRail'
 import { TutorialShell } from './components/tutorial/TutorialShell'
 import { SetupShell } from './components/tutorial/SetupShell'
+import { ChapterShell } from './components/tutorial/ChapterShell'
 import { PlaygroundShell } from './components/PlaygroundShell'
 import { BookOpen, Github, FileCode2 } from 'lucide-react'
 
@@ -22,11 +23,20 @@ function App({ mode }: { mode: AppMode }) {
 
   const chapter = useMemo(() => chapters.find((c) => c.id === chapterId), [chapterId])
   const nextChapter = useMemo(() => nextLessonChapter(chapterId), [chapterId])
+  // The chapter immediately after this one, regardless of whether it teaches a
+  // lesson — used by a multi-lesson chapter's "next story" link, which may point
+  // at a demo-only chapter (it simply opens in Playground Mode).
+  const rawNextChapter = useMemo(() => {
+    const idx = chapters.findIndex((c) => c.id === chapterId)
+    return chapters[idx + 1]
+  }, [chapterId])
 
   // Unknown concept in the URL → bounce to the default landing route.
   if (!chapter) return <Navigate to={defaultPath()} replace />
 
-  const canLearn = !!chapter.lesson || !!chapter.setup
+  // A concept can teach as a single lesson, a multi-lesson chapter, or the
+  // Story 0 setup walkthrough.
+  const canLearn = chapterCanLearn(chapter)
   // Learn requested on a demo-only chapter → redirect to its playground so the
   // URL always reflects exactly what's shown.
   if (mode === 'learn' && !canLearn) {
@@ -43,7 +53,7 @@ function App({ mode }: { mode: AppMode }) {
   // on a Learn-only chapter jumps to the nearest one that has one.
   const onModeChange = (m: AppMode) => {
     if (m === 'learn' && !canLearn) {
-      const firstLesson = chapters.find((c) => c.lesson || c.setup) ?? chapter
+      const firstLesson = chapters.find(chapterCanLearn) ?? chapter
       navigate(learnPath(firstLesson.id))
     } else if (m === 'playground' && !chapter.snippet) {
       const firstDemo = chapters.find((c) => c.snippet) ?? chapter
@@ -102,6 +112,18 @@ function App({ mode }: { mode: AppMode }) {
               key={chapter.setup.id}
               lesson={chapter.setup}
               onNextLesson={nextChapter ? () => navigate(learnPath(nextChapter.id)) : undefined}
+            />
+          ) : mode === 'learn' && chapter.lessonChapter ? (
+            <ChapterShell
+              // Remount on chapter change so cross-lesson state resets cleanly.
+              key={chapter.lessonChapter.id}
+              chapter={chapter.lessonChapter}
+              onOpenPlayground={() => navigate(playgroundPath(chapter.id))}
+              onNextStory={
+                rawNextChapter
+                  ? () => navigate(playgroundPath(rawNextChapter.id))
+                  : undefined
+              }
             />
           ) : mode === 'learn' && chapter.lesson ? (
             <TutorialShell
