@@ -50,6 +50,13 @@ export function StepCard({
   onReset: () => void
   onNext: () => void
 }) {
+  // A step has an edit worth offering even after it "counts as complete" when it
+  // carries an autoType but only validates manually (or by slider) — those never
+  // un-satisfy, so completion can't be used to retire the button.
+  const hasOfferableEdit =
+    !!step.autoType &&
+    (step.validation.type === 'manual' || step.validation.type === 'sliderChanged')
+
   return (
     <motion.div
       className="flex flex-col gap-3"
@@ -158,10 +165,14 @@ export function StepCard({
 
       {/* Actions */}
       <motion.div variants={riseItem} className="mt-0.5 flex items-center gap-2">
-        {/* "Do it for me" — on every step. Steps with a concrete edit have it
-            typed in for you; observation / slider steps are simply carried
-            forward. Either way the user never has to type to make progress. */}
-        {!completed && (
+        {/* "Do it for me" — on every step that has a concrete edit to make. For
+            `contains` steps it hides once the edit lands (completion implies it
+            was applied). But `manual` / `sliderChanged` steps count as satisfied
+            on entry, so we must keep offering the edit there — otherwise their
+            "do it for me" (e.g. "Add a second entity") would never be clickable.
+            It also stays visible while the auto-typer is mid-run, so the button
+            doesn't vanish the instant validation trips during typing. */}
+        {(autoTyping || !completed || hasOfferableEdit) && (
           <motion.button
             {...pressable}
             onClick={onDoItForMe}
@@ -183,7 +194,8 @@ export function StepCard({
         <motion.button
           {...pressable}
           onClick={onNext}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/20 px-3.5 py-1.5 text-[13px] font-medium text-violet-100 transition-colors hover:bg-violet-500/30"
+          disabled={autoTyping}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/20 px-3.5 py-1.5 text-[13px] font-medium text-violet-100 transition-colors hover:bg-violet-500/30 disabled:opacity-60"
         >
           <span className="relative inline-flex items-center gap-1.5">
             {nextLabel}
