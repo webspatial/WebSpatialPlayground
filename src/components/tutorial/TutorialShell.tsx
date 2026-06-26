@@ -5,7 +5,13 @@ import { LiveEditor, type FreshRange } from '../LiveEditor'
 import { LivePreview } from '../LivePreview'
 import { RuntimeBadge } from '../RuntimeBanner'
 import { detectRuntime } from '@/lib/runtime'
-import { resolveAutoType, type Lesson, type TutorialStep } from '@/tutorial/lesson'
+import {
+  resolveAutoType,
+  deriveStepCode,
+  diffEdit,
+  type Lesson,
+  type TutorialStep,
+} from '@/tutorial/lesson'
 import { LessonIntro } from './LessonIntro'
 import { StepCard } from './StepCard'
 import { WrapUp } from './WrapUp'
@@ -125,9 +131,21 @@ export function TutorialShell({
    */
   const doItForMe = () => {
     if (autoTyping) return
-    const target = step?.autoType ? resolveAutoType(code, step.autoType) : null
+    // First choice: place the step's edit against its exact-string anchor — this
+    // keeps the natural, in-place typing when the code is still "on the rails".
+    let target = step?.autoType ? resolveAutoType(code, step.autoType) : null
+    // Fallback: if the step has an edit but its anchor no longer matches (the user
+    // experimented, typed by hand, or an earlier auto-type was interrupted), the
+    // old behaviour was a silent no-op. Instead, reconcile the editor to this
+    // step's canonical result and type just the part that differs — so "Do it for
+    // me" works at any step regardless of what came before.
+    if (!target && step?.autoType) {
+      const canonical = deriveStepCode(lesson.starterCode, lesson.steps, stepIndex)
+      target = diffEdit(code, canonical)
+    }
     if (!target) {
-      // Nothing to type (or the anchor isn't present): just advance the step.
+      // Nothing to type (an observation step, or the code is already correct):
+      // just advance the step.
       onNext()
       return
     }
