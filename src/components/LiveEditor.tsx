@@ -118,15 +118,44 @@ export function LiveEditor({
     }
   }, [])
 
-  // Drive the caret (and thus the textarea's own scroll) when the auto-typer
-  // advances, so freshly typed code is always kept on screen.
+  // Keep freshly auto-typed code on screen as the "do it for me" typer runs.
+  //
+  // Two things are tracked. While typing, `caretPos` follows the live caret, so
+  // we move the textarea's selection there. But the typer clears `caretPos` the
+  // instant typing ends (in the same render that commits the final character),
+  // so the caret alone never scrolls the *last* line of an edit into view —
+  // `freshRange` does: it marks the just-typed span and lingers through the glow,
+  // so we fall back to its end once the caret is gone. Focus/selection only move
+  // while the caret is active, so we never hijack the user's cursor afterward.
   useLayoutEffect(() => {
-    if (caretPos == null) return
     const ta = taRef.current
     if (!ta) return
-    ta.focus({ preventScroll: true })
-    ta.setSelectionRange(caretPos, caretPos)
-    // The textarea scrolls to the caret on selection; mirror it to the layers.
+    // Where to scroll: the live caret, else the tail of the just-typed range.
+    const scrollPos = caretPos ?? (freshRange ? freshRange.end : null)
+    if (scrollPos == null) return
+
+    if (caretPos != null) {
+      ta.focus({ preventScroll: true })
+      ta.setSelectionRange(caretPos, caretPos)
+    }
+
+    // A textarea doesn't reliably scroll to a programmatic caret (browsers only
+    // do it for real key input), so an edit landing off-screen — e.g. a `replace`
+    // low in a long lesson — would sit below the fold until the user scrolled.
+    // Compute the target line and keep it in the viewport, with breathing room.
+    let line = 0
+    for (let i = 0; i < scrollPos && i < value.length; i++) {
+      if (value[i] === '\n') line++
+    }
+    const lineTop = PAD + line * LINE_PX
+    const lineBottom = lineTop + LINE_PX
+    const margin = LINE_PX * 2
+    if (lineBottom > ta.scrollTop + ta.clientHeight - margin) {
+      ta.scrollTop = lineBottom - ta.clientHeight + margin
+    } else if (lineTop < ta.scrollTop + margin) {
+      ta.scrollTop = lineTop - margin
+    }
+    // Mirror the resulting scroll position to the highlight layers.
     if (preRef.current) {
       preRef.current.scrollTop = ta.scrollTop
       preRef.current.scrollLeft = ta.scrollLeft
@@ -134,7 +163,7 @@ export function LiveEditor({
     if (bandsRef.current) {
       bandsRef.current.style.transform = `translateY(${-ta.scrollTop}px)`
     }
-  }, [caretPos, value])
+  }, [caretPos, freshRange, value])
 
   // Break the fresh range into per-line rectangles (line, start col, end col).
   const freshRects = useMemo(() => {
