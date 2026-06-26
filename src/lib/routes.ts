@@ -19,6 +19,6 @@ export const playgroundPath = (id: string) => chapterPath('playground', id)
  * Learn mode — falling back to its playground if, somehow, nothing has a lesson.
  */
 export function defaultPath(): string {
-  const first = chapters.find((c) => c.lesson) ?? chapters[0]
-  return first.lesson ? learnPath(first.id) : playgroundPath(first.id)
+  const first = chapters.find((c) => c.lesson || c.setup) ?? chapters[0]
+  return first.lesson || first.setup ? learnPath(first.id) : playgroundPath(first.id)
 }

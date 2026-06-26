@@ -10,11 +10,12 @@
  * tinkering with it without losing their place.
  */
 import { lessons, type Lesson, type LessonChapter } from './lesson'
+import { setupLesson, type SetupLesson } from './setup'
 import { realityChapter } from './realityChapter'
 import { snippets, type Snippet } from '@/examples/snippets'
 
 export interface Chapter {
-  /** Stable key — reuses the snippet id. */
+  /** Stable key — reuses the snippet id (or the setup lesson id for Story 0). */
   id: string
   /** The concept name, shown in navigation. */
   title: string
@@ -25,29 +26,44 @@ export interface Chapter {
    * single lesson (e.g. `<Reality>`). Mutually exclusive with `lesson`.
    */
   lessonChapter?: LessonChapter
-  /** The open playground example for this concept. */
-  snippet: Snippet
+  /**
+   * The Story 0 setup walkthrough, when this chapter is the setup chapter. It's
+   * a Learn-only chapter, so it has no snippet — Playground falls back to Learn.
+   */
+  setup?: SetupLesson
+  /** The open playground example for this concept, when one exists. */
+  snippet?: Snippet
+}
+
+/** Story 0 — a Learn-only setup chapter that sits before the first concept. */
+const setupChapter: Chapter = {
+  id: setupLesson.id,
+  title: setupLesson.chapter,
+  setup: setupLesson,
 }
 
 /** Multi-lesson chapters, keyed by the concept id they teach. */
 const lessonChapters: LessonChapter[] = [realityChapter]
 
 /**
- * Concept-ordered chapters. The snippet order is the teaching progression, so we
- * walk it and attach the guided lesson — single-lesson or multi-lesson — that
- * teaches the same concept (matched by name / id).
+ * Concept-ordered chapters. Story 0 (setup) leads, then the snippet order is the
+ * teaching progression: we walk it and attach the guided lesson — single-lesson
+ * or multi-lesson — that teaches the same concept (matched by name / id).
  */
-export const chapters: Chapter[] = snippets.map((snippet) => ({
-  id: snippet.id,
-  title: snippet.title,
-  snippet,
-  lesson: lessons.find((l) => l.chapter === snippet.title),
-  lessonChapter: lessonChapters.find((c) => c.id === snippet.id),
-}))
+export const chapters: Chapter[] = [
+  setupChapter,
+  ...snippets.map((snippet) => ({
+    id: snippet.id,
+    title: snippet.title,
+    snippet,
+    lesson: lessons.find((l) => l.chapter === snippet.title),
+    lessonChapter: lessonChapters.find((c) => c.id === snippet.id),
+  })),
+]
 
-/** Does this chapter offer something to learn, either form? */
+/** Does this chapter offer something to learn, in any form? */
 export function chapterCanLearn(c: Chapter): boolean {
-  return !!c.lesson || !!c.lessonChapter
+  return !!c.lesson || !!c.lessonChapter || !!c.setup
 }
 
 /** Look up a chapter by id, falling back to the first chapter. */

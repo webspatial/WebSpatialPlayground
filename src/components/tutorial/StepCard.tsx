@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { Sparkles, ArrowRight, RotateCcw, Wand2, Target, Headphones } from 'lucide-react'
-import type { Lesson, TutorialStep } from '@/tutorial/lesson'
+import { Sparkles, ArrowRight, RotateCcw, Wand2, Target, Headphones, Terminal } from 'lucide-react'
+import type { LessonMeta, TutorialStep } from '@/tutorial/lesson'
 import { StepProgress } from './StepProgress'
 import { CompletionMessage } from './CompletionMessage'
 import { phaseContainer, riseItem, disclosure, pressable, EASE_OUT } from './motion'
@@ -30,7 +30,7 @@ export function StepCard({
   onReset,
   onNext,
 }: {
-  lesson: Lesson
+  lesson: LessonMeta
   step: TutorialStep
   index: number
   total: number
@@ -86,6 +86,24 @@ export function StepCard({
         <Target size={13} className="mt-0.5 shrink-0 text-violet-300/80" />
         <p className="m-0 text-[12.5px] font-medium leading-relaxed text-violet-50/90">{step.task}</p>
       </motion.div>
+
+      {/* Optional command — the terminal action a setup step is really about,
+          with equivalents for other package managers listed underneath. */}
+      {step.command && (
+        <motion.div variants={riseItem} className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[12px] text-emerald-200/90">
+            <Terminal size={12} className="shrink-0 text-white/35" />
+            <code className="break-all">{step.command}</code>
+          </div>
+          {step.altCommands && step.altCommands.length > 0 && (
+            <div className="flex flex-wrap gap-x-3 gap-y-1 pl-1 text-[11px] text-white/35">
+              {step.altCommands.map((c) => (
+                <code key={c} className="break-all">{c}</code>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
 
       {/* Optional experiment */}
       {step.experiment && (

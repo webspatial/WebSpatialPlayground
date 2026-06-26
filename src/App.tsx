@@ -8,6 +8,7 @@ import { RuntimeBadge } from './components/RuntimeBanner'
 import { ModeSwitcher, type AppMode } from './components/ModeSwitcher'
 import { ChapterRail } from './components/ChapterRail'
 import { TutorialShell } from './components/tutorial/TutorialShell'
+import { SetupShell } from './components/tutorial/SetupShell'
 import { ChapterShell } from './components/tutorial/ChapterShell'
 import { PlaygroundShell } from './components/PlaygroundShell'
 import { BookOpen, Github, FileCode2 } from 'lucide-react'
@@ -33,20 +34,30 @@ function App({ mode }: { mode: AppMode }) {
   // Unknown concept in the URL → bounce to the default landing route.
   if (!chapter) return <Navigate to={defaultPath()} replace />
 
-  // A concept can teach as a single lesson or a multi-lesson chapter.
+  // A concept can teach as a single lesson, a multi-lesson chapter, or the
+  // Story 0 setup walkthrough.
   const canLearn = chapterCanLearn(chapter)
   // Learn requested on a demo-only chapter → redirect to its playground so the
   // URL always reflects exactly what's shown.
   if (mode === 'learn' && !canLearn) {
     return <Navigate to={playgroundPath(chapter.id)} replace />
   }
+  // Playground requested on a Learn-only chapter (Story 0 setup) → keep the URL
+  // honest by bouncing to its lesson; there is no demo to show.
+  if (mode === 'playground' && !chapter.snippet) {
+    return <Navigate to={learnPath(chapter.id)} replace />
+  }
 
   // Switching modes keeps the user on the same concept. Asking to Learn a
-  // demo-only chapter instead jumps to the nearest one that actually teaches.
+  // demo-only chapter jumps to the nearest one that teaches; asking for a demo
+  // on a Learn-only chapter jumps to the nearest one that has one.
   const onModeChange = (m: AppMode) => {
     if (m === 'learn' && !canLearn) {
       const firstLesson = chapters.find(chapterCanLearn) ?? chapter
       navigate(learnPath(firstLesson.id))
+    } else if (m === 'playground' && !chapter.snippet) {
+      const firstDemo = chapters.find((c) => c.snippet) ?? chapter
+      navigate(playgroundPath(firstDemo.id))
     } else {
       navigate(chapterPath(m, chapter.id))
     }
@@ -95,7 +106,14 @@ function App({ mode }: { mode: AppMode }) {
           onSelect={(id) => navigate(chapterPath(mode, id))}
         />
         <div className="flex min-h-0 flex-1 flex-col">
-          {mode === 'learn' && chapter.lessonChapter ? (
+          {mode === 'learn' && chapter.setup ? (
+            <SetupShell
+              // Remount on chapter change so the shell reseeds its files + phase.
+              key={chapter.setup.id}
+              lesson={chapter.setup}
+              onNextLesson={nextChapter ? () => navigate(learnPath(nextChapter.id)) : undefined}
+            />
+          ) : mode === 'learn' && chapter.lessonChapter ? (
             <ChapterShell
               // Remount on chapter change so cross-lesson state resets cleanly.
               key={chapter.lessonChapter.id}
@@ -115,9 +133,9 @@ function App({ mode }: { mode: AppMode }) {
               onOpenPlayground={() => navigate(playgroundPath(chapter.id))}
               onNextLesson={nextChapter ? () => navigate(learnPath(nextChapter.id)) : undefined}
             />
-          ) : (
+          ) : chapter.snippet ? (
             <PlaygroundShell activeId={chapter.snippet.id} />
-          )}
+          ) : null}
         </div>
       </div>
     </div>

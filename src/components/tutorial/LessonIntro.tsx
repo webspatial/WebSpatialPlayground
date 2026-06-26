@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Sparkles, Check, ArrowRight } from 'lucide-react'
-import type { Lesson } from '@/tutorial/lesson'
+import type { LessonMeta } from '@/tutorial/lesson'
 import { phaseContainer, riseItem, pressable } from './motion'
 
 /**
@@ -11,7 +11,7 @@ import { phaseContainer, riseItem, pressable } from './motion'
  * Each block settles in just behind the one before it (phaseContainer stagger),
  * giving the opener a soft, deliberate reveal instead of a hard cut.
  */
-export function LessonIntro({ lesson, onStart }: { lesson: Lesson; onStart: () => void }) {
+export function LessonIntro({ lesson, onStart }: { lesson: LessonMeta; onStart: () => void }) {
   return (
     <motion.div
       className="flex flex-col gap-3"
