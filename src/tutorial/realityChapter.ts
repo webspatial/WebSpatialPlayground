@@ -71,7 +71,7 @@ const firstStarter = `export default function FirstScene() {
           A normal React layout. The 3D scene will live in the region below.
         </p>
 
-        {/* placeholder — the 2D area that will become a <Reality> scene */}
+        {/* placeholder — the 2D area that will become a Reality scene */}
         <div
           style={{
             width: 360,
@@ -131,7 +131,7 @@ const firstSteps: TutorialStep[] = [
     validation: { type: 'contains', value: '<Reality' },
     autoType: at(
       'replace',
-      `        {/* placeholder — the 2D area that will become a <Reality> scene */}
+      `        {/* placeholder — the 2D area that will become a Reality scene */}
         <div
           style={{
             width: 360,
