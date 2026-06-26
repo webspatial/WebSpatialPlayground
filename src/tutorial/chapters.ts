@@ -66,6 +66,19 @@ export function chapterCanLearn(c: Chapter): boolean {
   return !!c.lesson || !!c.lessonChapter || !!c.setup
 }
 
+/**
+ * A one-line description of a chapter, pulled from whichever form it carries —
+ * the setup intro, a multi-lesson chapter's subtitle, a single lesson's intro,
+ * or the playground snippet's blurb. Used by the splash screen so each chapter
+ * card explains itself without duplicating copy.
+ */
+export function chapterBlurb(c: Chapter): string {
+  if (c.setup) return c.setup.intro
+  if (c.lessonChapter) return c.lessonChapter.overview.subtitle
+  if (c.lesson) return c.lesson.intro
+  return c.snippet?.blurb ?? ''
+}
+
 /** Look up a chapter by id, falling back to the first chapter. */
 export function chapterById(id: string): Chapter {
   return chapters.find((c) => c.id === id) ?? chapters[0]
