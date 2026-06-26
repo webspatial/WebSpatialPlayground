@@ -45,14 +45,6 @@ export const communityRepo = {
 
 export const communityDemos: CommunityDemo[] = [
   {
-    title: 'WebSpatial',
-    url: 'https://webspatial.dev',
-    description:
-      'The home of WebSpatial — bring real spatial depth, materials and gestures to the web with the tools you already know.',
-    author: 'WebSpatial',
-    tags: ['Official', 'Docs'],
-  },
-  {
     title: 'WebSpatial Playground',
     url: 'https://playground.webspatial.dev',
     description:
@@ -61,19 +53,19 @@ export const communityDemos: CommunityDemo[] = [
     tags: ['Official', 'Editor'],
   },
   {
-    title: 'WebSpatial Docs',
-    url: 'https://webspatial.dev/docs',
+    title: 'WebSpatial Hackathon',
+    url: 'https://webspatial-hackathon.vercel.app/',
     description:
-      'The full guide to the SDK — the CSS API (--xr-back, --xr-background-material), spatial events, and the <Model> / <Reality> 3D containers.',
-    author: 'WebSpatial',
-    tags: ['Official', 'Docs'],
+      'A community hackathon showcase for WebSpatial experiments, demos and spatial web ideas.',
+    author: 'WebSpatial Community',
+    tags: ['Community', 'Hackathon'],
   },
   {
-    title: 'WebSpatial SDK',
-    url: 'https://github.com/webspatial/webspatial-sdk',
+    title: 'Solar System',
+    url: 'https://sample-solarsystem.vercel.app/',
     description:
-      'The open-source SDK on GitHub — the JSX runtime, Vite plugin and React components that turn an ordinary site into a spatial one.',
-    author: 'WebSpatial',
-    tags: ['Official', 'Open Source'],
+      'A spatial solar system demo that shows 3D celestial bodies arranged in depth for an immersive WebSpatial scene.',
+    author: 'WebSpatial Community',
+    tags: ['Community', '3D'],
   },
 ]
