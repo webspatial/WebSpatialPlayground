@@ -71,7 +71,7 @@ const firstStarter = `export default function FirstScene() {
           A normal React layout. The 3D scene will live in the region below.
         </p>
 
-        {/* placeholder — the 2D area that will become a <Reality> scene */}
+        {/* placeholder — this 2D area will become the 3D scene */}
         <div
           style={{
             width: 360,
@@ -131,7 +131,7 @@ const firstSteps: TutorialStep[] = [
     validation: { type: 'contains', value: '<Reality' },
     autoType: at(
       'replace',
-      `        {/* placeholder — the 2D area that will become a <Reality> scene */}
+      `        {/* placeholder — this 2D area will become the 3D scene */}
         <div
           style={{
             width: 360,
@@ -384,7 +384,10 @@ const transformsSteps: TutorialStep[] = [
     explanation: 'Multiple entities can share the same local 3D space.',
     task: 'Add a second BoxEntity at a different position.',
     anchors: ['<BoxEntity'],
-    validation: { type: 'manual' },
+    // Checked on the second box's distinctive x so the step is only "done" once
+    // the edit lands — otherwise "Do it for me" would be hidden and skipped.
+    validation: { type: 'contains', value: 'x: -0.12' },
+    notYet: 'Not quite yet — add a second BoxEntity, then try Next again.',
     autoType: at(
       'replace',
       '            {/* add a second entity here */}',
@@ -769,7 +772,11 @@ const modelsSteps: TutorialStep[] = [
     explanation: 'One model asset can be loaded once and placed multiple times.',
     task: 'Add a second ModelEntity using the same asset id.',
     anchors: ['<ModelEntity'],
-    validation: { type: 'manual' },
+    // Checked on the second instance's distinctive x, so "Do it for me" stays
+    // available until the second ModelEntity is actually added.
+    validation: { type: 'contains', value: 'x: 0.14' },
+    notYet:
+      'Not quite yet — add a second ModelEntity using the same model id, then try Next again.',
     autoType: at(
       'insertLineAfter',
       '/>',
@@ -1011,7 +1018,11 @@ const attachSteps: TutorialStep[] = [
       'One AttachmentAsset can render into multiple AttachmentEntity placements.',
     task: 'Add a second AttachmentEntity that uses the same attachment name.',
     anchors: ['<AttachmentEntity'],
-    validation: { type: 'manual' },
+    // Checked on the second placement's distinctive x, so "Do it for me" stays
+    // available until the second AttachmentEntity is actually added.
+    validation: { type: 'contains', value: '0.22' },
+    notYet:
+      'Not quite yet — add a second AttachmentEntity with the same attachment name, then try Next again.',
     autoType: at(
       'insertLineAfter',
       '</Entity>',

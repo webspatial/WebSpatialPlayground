@@ -178,6 +178,11 @@ export function TutorialShell({
 
   const onNext = () => {
     if (!step) return
+    // Never advance while "do it for me" is still typing. A multi-line edit can
+    // satisfy a step's check (e.g. "<Reality") long before the full block is in,
+    // so cutting the typer off here would leave the code half-written and break
+    // a later step's anchor. Let the edit finish; the button re-enables then.
+    if (autoTyping) return
     cancelTyping()
     // Never advance past code that doesn't compile — point at the editor instead.
     if (!previewValid) {

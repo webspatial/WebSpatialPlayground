@@ -142,8 +142,10 @@ export function StepCard({
       <motion.div variants={riseItem} className="mt-0.5 flex items-center gap-2">
         {/* "Do it for me" — on every step. Steps with a concrete edit have it
             typed in for you; observation / slider steps are simply carried
-            forward. Either way the user never has to type to make progress. */}
-        {!completed && (
+            forward. Either way the user never has to type to make progress.
+            Stays visible while typing (even once the step's check has passed
+            mid-edit) so the "Typing…" state is always honest. */}
+        {(!completed || autoTyping) && (
           <motion.button
             {...pressable}
             onClick={onDoItForMe}
@@ -165,7 +167,8 @@ export function StepCard({
         <motion.button
           {...pressable}
           onClick={onNext}
-          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/20 px-3.5 py-1.5 text-[13px] font-medium text-violet-100 transition-colors hover:bg-violet-500/30"
+          disabled={autoTyping}
+          className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-violet-400/30 bg-violet-500/20 px-3.5 py-1.5 text-[13px] font-medium text-violet-100 transition-colors hover:bg-violet-500/30 disabled:opacity-50"
         >
           <span className="relative inline-flex items-center gap-1.5">
             {nextLabel}
