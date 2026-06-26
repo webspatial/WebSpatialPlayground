@@ -65,6 +65,59 @@ export function resolveAutoType(
   return { at, text: '\n' + a.text, removeLen: 0 }
 }
 
+/**
+ * Fold the "do it for me" edits of `steps[0..uptoIndex]` over `starter` to get
+ * the *canonical* code for that point in a lesson — the exact state the tutorial
+ * intends after that step, independent of anything the user typed or experimented
+ * with. Steps whose anchor can't be placed are simply skipped, mirroring how the
+ * live auto-typer resolves edits.
+ */
+export function deriveStepCode(
+  starter: string,
+  steps: TutorialStep[],
+  uptoIndex: number,
+): string {
+  let code = starter
+  for (let i = 0; i <= uptoIndex && i < steps.length; i++) {
+    const a = steps[i].autoType
+    if (!a) continue
+    const target = resolveAutoType(code, a)
+    if (!target) continue
+    code = code.slice(0, target.at) + target.text + code.slice(target.at + target.removeLen)
+  }
+  return code
+}
+
+/**
+ * Express the change from `current` to `target` as a single contiguous edit
+ * (the same `{ at, text, removeLen }` shape the auto-typer consumes) by trimming
+ * the shared prefix and suffix. This lets "do it for me" reconcile drifted code
+ * to a step's canonical result — typing only the region that actually differs —
+ * when the step's exact-string anchor no longer matches. Returns `null` when the
+ * code already equals the target.
+ */
+export function diffEdit(
+  current: string,
+  target: string,
+): { at: number; text: string; removeLen: number } | null {
+  if (current === target) return null
+  const max = Math.min(current.length, target.length)
+  let p = 0
+  while (p < max && current[p] === target[p]) p++
+  let s = 0
+  while (
+    s < max - p &&
+    current[current.length - 1 - s] === target[target.length - 1 - s]
+  ) {
+    s++
+  }
+  return {
+    at: p,
+    text: target.slice(p, target.length - s),
+    removeLen: current.length - p - s,
+  }
+}
+
 export interface TutorialStep {
   id: string
   /** One short lesson-step title, e.g. "Mark the element as spatial". */
