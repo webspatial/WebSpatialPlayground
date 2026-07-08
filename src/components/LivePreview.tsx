@@ -1,6 +1,13 @@
-import { Component, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { AlertTriangle, Sparkles } from 'lucide-react'
 import { compile } from '@/lib/compile'
+import { detectRuntime } from '@/lib/runtime'
+
+// In a spatial runtime every preview swap tears down and re-creates native
+// spatialized elements — much heavier than a DOM update, and typing on a
+// headset is slow enough that a short debounce fires between individual
+// keystrokes. Give the runtime a longer idle window before recompiling.
+const DEFAULT_DEBOUNCE_MS = detectRuntime().isSpatial ? 800 : 250
 
 /**
  * Catches render-time errors thrown by the user's component so a bad keystroke
@@ -35,7 +42,7 @@ class PreviewBoundary extends Component<
 
 export function LivePreview({
   source,
-  debounceMs = 250,
+  debounceMs = DEFAULT_DEBOUNCE_MS,
   onRangeInput,
   onValidityChange,
   annotation,
@@ -57,6 +64,13 @@ export function LivePreview({
   const versionRef = useRef(0)
   const [version, setVersion] = useState(0)
   const stageRef = useRef<HTMLDivElement>(null)
+  // The text field that held focus just before a preview swap committed, so
+  // focus can be handed back if the swap steals it (see below).
+  const focusSnapshot = useRef<{
+    el: HTMLTextAreaElement | HTMLInputElement
+    start: number
+    end: number
+  } | null>(null)
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -68,12 +82,49 @@ export function LivePreview({
       }
       setError(null)
       onValidityChange?.(true)
+      const active = document.activeElement
+      focusSnapshot.current =
+        active instanceof HTMLTextAreaElement || active instanceof HTMLInputElement
+          ? { el: active, start: active.selectionStart ?? 0, end: active.selectionEnd ?? 0 }
+          : null
       setComp(() => C)
       versionRef.current += 1
       setVersion(versionRef.current)
     }, debounceMs)
     return () => clearTimeout(t)
   }, [source, debounceMs, onValidityChange])
+
+  // Swapping in a freshly compiled component unmounts and remounts the whole
+  // preview subtree. In a WebSpatial runtime that destroys and re-creates
+  // native spatialized elements, and the runtime can move input focus to the
+  // new spatial content — so typing in the editor loses its caret 250–800ms
+  // after each keystroke. If a text field was focused when the swap committed
+  // and focus fell to nowhere, give it back. The extra rAF + timeout passes
+  // catch the runtime stealing focus a beat after the DOM swap.
+  useLayoutEffect(() => {
+    const snap = focusSnapshot.current
+    if (!snap) return
+    focusSnapshot.current = null
+    const restore = () => {
+      const active = document.activeElement
+      const focusLost = !active || active === document.body
+      if (focusLost && snap.el.isConnected) {
+        snap.el.focus({ preventScroll: true })
+        try {
+          snap.el.setSelectionRange(snap.start, snap.end)
+        } catch {
+          // input types without selection support
+        }
+      }
+    }
+    restore()
+    const raf = requestAnimationFrame(restore)
+    const t = setTimeout(restore, 120)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t)
+    }
+  }, [version])
 
   // Detect interaction with any range slider the user's component renders.
   useEffect(() => {
@@ -93,7 +144,10 @@ export function LivePreview({
   return (
     <div className="relative flex h-full w-full flex-col">
       <div ref={stageRef} className="ws-stage relative flex flex-1 items-center justify-center overflow-auto p-8 min-h-0">
-        <div key={version} className="relative z-10 flex h-full w-full items-center justify-center">
+        {/* No key here: each compile yields a new component identity, so the
+            user subtree already remounts on its own. Keying the wrapper by
+            version would needlessly destroy this stable container too. */}
+        <div className="relative z-10 flex h-full w-full items-center justify-center">
           {Comp ? (
             <PreviewBoundary
               resetKey={String(version)}
