@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { snippets, docLinks } from '@/examples/snippets'
+import { decodeShareCode, encodeShareCode, readShareHash, writeShareHash } from '@/lib/share'
 import { LiveEditor } from './LiveEditor'
 import { LivePreview } from './LivePreview'
 import { RuntimeBadge } from './RuntimeBanner'
 import {
-  BookOpen, Copy, Check, RotateCcw,
+  BookOpen, Copy, Check, RotateCcw, Link2,
   ExternalLink, FileCode2, Play, Sparkles, ArrowUpRight,
 } from 'lucide-react'
 
@@ -19,6 +20,11 @@ export function PlaygroundShell({ activeId }: { activeId: string }) {
   // keyed by id so edits survive switching chapters and coming back.
   const [edited, setEdited] = useState<Record<string, string>>({})
   const [copied, setCopied] = useState(false)
+  const [shared, setShared] = useState(false)
+  // True once we've checked the URL hash for shared code (and applied it if
+  // present). The hash-sync effect below stays quiet until then so it can't
+  // wipe an incoming share link before it has been decoded.
+  const [hydrated, setHydrated] = useState(false)
 
   const snippet = useMemo(
     () => snippets.find((s) => s.id === activeId) ?? snippets[0],
@@ -43,6 +49,54 @@ export function PlaygroundShell({ activeId }: { activeId: string }) {
   }
 
   const isDirty = edited[snippet.id] != null && edited[snippet.id] !== snippet.code
+
+  // ─── Shareable URLs: #code=<compressed source> ───
+  // Landing on a share link seeds the editor with the code embedded in the
+  // hash. Runs per snippet so a chapter switch (which drops the hash via
+  // normal navigation) re-checks cleanly.
+  useEffect(() => {
+    setHydrated(false)
+    const payload = readShareHash()
+    if (!payload) {
+      setHydrated(true)
+      return
+    }
+    let cancelled = false
+    decodeShareCode(payload).then((sharedCode) => {
+      if (cancelled) return
+      if (sharedCode != null && sharedCode !== snippet.code) {
+        setEdited((m) => ({ ...m, [snippet.id]: sharedCode }))
+      }
+      setHydrated(true)
+    })
+    return () => { cancelled = true }
+  }, [snippet.id, snippet.code])
+
+  // Keep the address bar itself shareable: while the code differs from the
+  // default, the hash carries the compressed source (debounced, replaceState —
+  // no history spam); on reset it disappears. Copying the URL is sharing.
+  useEffect(() => {
+    if (!hydrated) return
+    if (!isDirty) {
+      writeShareHash(null)
+      return
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      const payload = await encodeShareCode(code)
+      if (!cancelled) writeShareHash(payload)
+    }, 400)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [hydrated, isDirty, code])
+
+  // The Share button stamps the hash immediately (skipping the debounce) and
+  // copies the full URL — code included — to the clipboard.
+  const share = async () => {
+    writeShareHash(isDirty ? await encodeShareCode(code) : null)
+    await navigator.clipboard.writeText(window.location.href)
+    setShared(true)
+    setTimeout(() => setShared(false), 1800)
+  }
 
   return (
     <>
@@ -69,6 +123,12 @@ export function PlaygroundShell({ activeId }: { activeId: string }) {
                 className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-white/45 transition-all hover:bg-white/5 hover:text-white/75">
                 {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
                 {copied ? 'Copied!' : 'Copy'}
+              </button>
+              <button onClick={share}
+                title="Copy a link with this code embedded in the URL"
+                className="flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] text-white/45 transition-all hover:bg-white/5 hover:text-white/75">
+                {shared ? <Check size={12} className="text-emerald-400" /> : <Link2 size={12} />}
+                {shared ? 'Link copied!' : 'Share'}
               </button>
             </div>
           </div>
